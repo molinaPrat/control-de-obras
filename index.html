@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0F2A44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Obras">
-<meta name="version-app" content="2026-11-23-github">
+<meta name="version-app" content="2026-11-23-calendario">
 <title>Control de Obras</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
@@ -421,6 +421,44 @@ function aviso(texto, error = false) {
   t.textContent = texto; t.className = 'toast' + (error ? ' error' : ''); t.hidden = false;
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, error ? 5000 : 2600);
 }
+/* ---------- Suscripción al calendario (iPhone, Outlook, Google) ---------- */
+async function tokenCalendario(nuevo) {
+  if (nuevo) await q(sb.from('calendario_tokens').delete().eq('user_id', usuario.id));
+  const ya = await q(sb.from('calendario_tokens').select('token').eq('user_id', usuario.id).maybeSingle());
+  if (ya) return ya.token;
+  return (await q(sb.from('calendario_tokens').insert({}).select('token').single())).token;
+}
+async function conectarCalendario(nuevo = false) {
+  let token;
+  try { token = await tokenCalendario(nuevo === true); } catch (e) { aviso(mensajeError(e), true); return; }
+  const https = `${CONFIG.url}/functions/v1/calendario?t=${token}`;
+  const webcal = https.replace(/^https:/, 'webcal:');
+  const m = $('#modal');
+  m.innerHTML = `<div class="velo"><div class="dialogo" role="dialog" aria-modal="true" aria-labelledby="cal-t" style="max-width:520px">
+    <h2 id="cal-t" style="margin:0;font-size:20px;color:var(--azul)">Ver las tareas en tu calendario</h2>
+    <p style="font-size:15px;color:var(--texto-2)">Tus tareas pendientes aparecerán en el calendario del iPhone, Outlook o Google, y se actualizarán solas. Para cambiarlas, hazlo siempre aquí, en la app.</p>
+    <a class="btn btn-principal btn-bloque" href="${webcal}">En este iPhone o Mac: suscribirme</a>
+    <div class="campo"><label for="cal-url">Dirección del calendario (para Outlook o Google)</label>
+      <input id="cal-url" type="text" readonly value="${esc(https)}" style="font-size:13px"></div>
+    <div class="botones" style="justify-content:space-between">
+      <button type="button" class="btn btn-secundario" id="cal-copiar">Copiar dirección</button>
+      <button type="button" class="btn btn-secundario" id="cal-cerrar">Cerrar</button>
+    </div>
+    <p style="font-size:13px;color:var(--gris)">Esta dirección es privada: quien la tenga puede ver tus tareas. Si se la has pasado a alguien por error, <button type="button" class="enlace-boton" id="cal-nueva" style="padding:0;font-size:13px">crea una dirección nueva</button> y la anterior dejará de funcionar.</p>
+  </div></div>`;
+  const cerrar = () => { m.innerHTML = ''; };
+  $('#cal-cerrar').onclick = cerrar;
+  $('#cal-copiar').onclick = async () => {
+    try { await navigator.clipboard.writeText(https); aviso('Dirección copiada'); }
+    catch (e) { const i = $('#cal-url'); i.focus(); i.select(); aviso('Selecciona la dirección y cópiala'); }
+  };
+  $('#cal-url').onfocus = e => e.target.select();
+  $('#cal-nueva').onclick = async () => {
+    cerrar();
+    if (await confirmar('¿Crear una dirección nueva? La anterior dejará de funcionar y tendrás que volver a suscribirte en tus calendarios.', 'Crear nueva')) conectarCalendario(true);
+  };
+}
+
 function confirmar(texto, boton = 'Borrar') {
   return new Promise(res => {
     const m = $('#modal');
@@ -1144,7 +1182,8 @@ async function vistaTareas(_, t) {
   if (!vigente(t)) return;
   const hoy = hoyISO();
   if (vT.anio == null) { const d = new Date(); vT.anio = d.getFullYear(); vT.mes = d.getMonth(); vT.dia = hoy; }
-  cabecera({ titulo: 'Tareas pendientes', sub: 'Llamadas, entregas y gestiones, organizadas por día', acciones: botonCab('#tarea/nueva', 'Nueva tarea', 'Nueva') });
+  cabecera({ titulo: 'Tareas pendientes', sub: 'Llamadas, entregas y gestiones, organizadas por día', acciones: `<button type="button" class="btn-pdf" id="t-cal" aria-label="Conectar con mi calendario">${ic('tareas', 18)}<span class="solo-pc">Conectar calendario</span></button>` + botonCab('#tarea/nueva', 'Nueva tarea', 'Nueva') });
+  $('#t-cal').onclick = () => conectarCalendario();
   const pend = tareas.filter(x => !x.hecha);
   const porDia = {};
   tareas.forEach(x => { (porDia[x.fecha] = porDia[x.fecha] || []).push(x); });
