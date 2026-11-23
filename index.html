@@ -1,0 +1,1519 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F2A44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Obras">
+<title>Control de Obras</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+/* Estructura: menú lateral fijo en ordenador, barra superior + menú inferior en móvil */
+:root{
+  --azul:#0F2A44; --azul-2:#17385A; --azul-borde:#3A5674;
+  --naranja:#C2410C; --naranja-h:#9A3412; --naranja-suave:#FFF1E8; --naranja-vivo:#F97316;
+  --verde:#15803D; --verde-suave:#E6F4EA;
+  --rojo:#B91C1C; --rojo-suave:#FDECEC; --rojo-oscuro:#8A1C1C; --rojo-borde:#E8B4B4;
+  --fondo:#F1F3F5; --blanco:#FFFFFF; --borde:#DDE2E8; --borde-input:#C5CDD6; --linea:#E4E8ED; --gris-suave:#E4E8ED; --cabecera-tabla:#F7F8FA;
+  --texto:#1F2933; --texto-2:#3E4C59; --gris:#52606D; --nav-texto:#C9D6E3; --nav-tenue:#9FB3C8;
+  --fuente:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radio:10px;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--fuente);font-size:15px;line-height:1.45;background:var(--fondo);color:var(--texto);-webkit-text-size-adjust:100%}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--azul)} a:hover{color:var(--naranja)}
+:focus-visible{outline:3px solid var(--naranja-vivo);outline-offset:2px}
+[hidden]{display:none!important}
+h1,h2,h3{text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Acceso ---------- */
+.acceso{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px max(16px, env(safe-area-inset-right, 0px)) 24px max(16px, env(safe-area-inset-left, 0px));background:var(--azul)}
+.acceso-caja{width:100%;max-width:400px;background:var(--blanco);border-radius:14px;padding:28px 24px;display:flex;flex-direction:column;gap:18px}
+.acceso-marca{display:flex;flex-direction:column;gap:4px}
+.acceso-marca span{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--naranja)}
+.acceso-marca h1{margin:0;font-size:24px;color:var(--azul)}
+.acceso-marca p{margin:0;color:var(--gris)}
+.enlace-boton{background:none;border:none;padding:8px 0;color:var(--azul);font-weight:600;cursor:pointer;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.aviso{padding:12px 14px;border-radius:8px;font-size:14px}
+.aviso-error{background:var(--rojo-suave);color:var(--rojo-oscuro)}
+.aviso-ok{background:var(--verde-suave);color:#0F5A2A}
+.aviso-info{background:var(--gris-suave);color:var(--texto-2)}
+
+/* ---------- Estructura ---------- */
+.app{min-height:100%;display:flex}
+.sidebar{display:none}
+.principal{flex:1;min-width:0;display:flex;flex-direction:column}
+.cab{position:sticky;top:0;z-index:20;background:var(--azul);color:var(--blanco);padding:calc(14px + env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px));display:flex;align-items:center;gap:10px;min-height:72px}
+.cab-textos{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cab-marca{font-size:11px;font-weight:600;letter-spacing:.12em;color:var(--nav-texto)}
+.cab h1{margin:0;font-size:22px;font-weight:700;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+.cab-sub{display:none;margin:0;color:var(--gris);font-size:15px}
+.cab-acciones{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.cab-volver{width:44px;height:44px;flex:none;border-radius:10px;color:var(--blanco);display:flex;align-items:center;justify-content:center;margin-left:-6px}
+.cab-volver:hover{color:var(--blanco);background:var(--azul-2)}
+.cab .btn-secundario{display:none}
+.contenido{flex:1;padding:16px max(16px, env(safe-area-inset-right, 0px)) calc(100px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));display:flex;flex-direction:column;gap:16px;width:100%;max-width:1240px}
+.menu-inf{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--azul);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding:6px max(4px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px))}
+.menu-inf a{height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:12px;color:var(--nav-texto);text-decoration:none;border-radius:8px}
+.menu-inf a[aria-current="page"]{color:var(--blanco);font-weight:600}
+.menu-inf a[aria-current="page"] svg{color:var(--naranja-vivo)}
+
+@media (min-width: 900px){
+  .sidebar{display:flex;flex-direction:column;gap:26px;width:248px;flex:none;background:var(--azul);color:var(--blanco);padding:24px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .menu-inf{display:none}
+  .cab{background:var(--blanco);color:var(--azul);border-bottom:1px solid var(--borde);padding:20px 32px;min-height:0}
+  .cab-marca{display:none}
+  .cab h1{font-size:26px}
+  .cab-sub{display:block}
+  .cab-volver{color:var(--azul);border:1px solid var(--borde)}
+  .cab-volver:hover{color:var(--azul);background:var(--fondo)}
+  .cab .btn-secundario{display:inline-flex}
+  .contenido{padding:24px 32px 48px;gap:20px}
+  .solo-movil{display:none!important}
+}
+@media (max-width: 899.98px){ .solo-pc{display:none!important} }
+
+.marca-lateral{padding:0 8px;display:flex;flex-direction:column;gap:4px}
+.marca-lateral strong{font-size:18px;letter-spacing:.04em}
+.marca-lateral span{font-size:13px;color:var(--nav-texto)}
+.nav-lateral{display:flex;flex-direction:column;gap:4px}
+.nav-lateral a{height:44px;border-radius:8px;display:flex;align-items:center;gap:12px;padding:0 12px;color:var(--nav-texto);text-decoration:none;font-size:15px}
+.nav-lateral a:hover{background:var(--azul-2);color:var(--blanco)}
+.nav-lateral a[aria-current="page"]{background:var(--azul-2);color:var(--blanco);font-weight:600}
+.nav-lateral a[aria-current="page"] svg{color:var(--naranja-vivo)}
+.proximamente-lat{display:flex;flex-direction:column;gap:8px;padding:0 12px;font-size:14px;color:var(--nav-tenue)}
+.proximamente-lat b{font-size:12px;letter-spacing:.1em;font-weight:600}
+.cuenta-lat{margin-top:auto;border-top:1px solid var(--azul-borde);padding:16px 12px 0;display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--nav-texto);word-break:break-all}
+.cuenta-lat button{align-self:flex-start;background:none;border:1px solid var(--azul-borde);color:var(--blanco);border-radius:8px;height:40px;padding:0 14px;cursor:pointer}
+.cuenta-lat button:hover{background:var(--azul-2)}
+
+/* ---------- Botones y formularios ---------- */
+.btn{height:46px;padding:0 18px;border-radius:10px;border:none;font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-principal{background:var(--naranja);color:var(--blanco)}
+.btn-principal:hover{background:var(--naranja-h);color:var(--blanco)}
+.btn-secundario{background:var(--blanco);color:var(--azul);border:1.5px solid var(--azul)}
+.btn-secundario:hover{background:var(--fondo);color:var(--azul)}
+.btn-peligro{background:var(--blanco);color:var(--rojo);border:1.5px solid var(--rojo)}
+.btn-peligro:hover{background:var(--rojo-suave);color:var(--rojo)}
+.btn-bloque{width:100%;height:52px;font-size:16px}
+.btn[disabled]{opacity:.6;cursor:wait}
+.cab .btn-principal{height:44px;padding:0 14px}
+.btn-pdf{height:44px;padding:0 14px;border-radius:10px;border:1.5px solid currentColor;background:transparent;color:inherit;font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.btn-pdf:hover{background:rgba(127,127,127,.12)}
+.btn-pdf[disabled]{opacity:.6;cursor:wait}
+.form{display:flex;flex-direction:column;gap:16px;max-width:640px}
+.campo{display:flex;flex-direction:column;gap:6px;min-width:0}
+.campo label,.campo .etq{font-size:14px;font-weight:600}
+.campo small{font-size:13px;color:var(--gris)}
+.opcional{font-weight:400;color:var(--gris)}
+input[type=text],input[type=email],input[type=password],input[type=date],input[type=search],select,textarea{width:100%;min-width:0;height:48px;border:1px solid var(--borde-input);border-radius:10px;padding:0 14px;font-size:16px;background:var(--blanco);color:var(--texto)}
+textarea{height:auto;padding:12px 14px;resize:vertical;min-height:96px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--azul);box-shadow:0 0 0 3px rgba(15,42,68,.18)}
+.invalido{border-color:var(--rojo)!important}
+.dos-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.botonera{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+@media (min-width:900px){ .botonera{flex-direction:row} .botonera .btn-bloque{width:auto;min-width:180px} .botonera .btn-peligro{margin-left:auto} }
+.error-form{color:var(--rojo);font-size:14px;font-weight:600}
+
+/* ---------- Tarjetas y listas ---------- */
+.tarjeta{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tarjeta-cab{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.tarjeta h2{margin:0;font-size:17px;color:var(--azul)}
+.tarjeta-cab a{font-size:14px;font-weight:600;white-space:nowrap}
+.etiqueta-seccion{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;color:var(--gris);text-transform:uppercase}
+.vacio{margin:0;color:var(--gris)}
+.vacio-caja{border:1.5px dashed var(--borde);border-radius:8px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center}
+.enlace-accion{font-weight:600;color:var(--naranja)}
+.resumen{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:900px){ .resumen{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px} }
+.dato{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);padding:14px 16px;display:flex;flex-direction:column-reverse;gap:2px;text-decoration:none;color:inherit}
+.dato:hover{border-color:var(--azul);color:inherit}
+.dato b{font-size:30px;color:var(--azul);line-height:1.1;font-variant-numeric:tabular-nums}
+.dato span{font-size:14px;color:var(--gris)}
+.rejilla-inicio{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media (min-width:900px){ .rejilla-inicio{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))} }
+.acciones-rapidas{display:flex;flex-direction:column;gap:10px}
+.lista-filas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.lista-filas li{border-top:1px solid var(--linea)}
+.lista-filas li:first-child{border-top:none}
+.fila-enlace{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;text-decoration:none;color:var(--texto);min-height:44px}
+.fila-enlace:hover{color:var(--azul)}
+.fila-enlace .t{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.fila-enlace .m{font-size:13px;color:var(--gris)}
+.pila{display:flex;flex-direction:column;gap:2px;min-width:0}
+
+.pastilla{display:inline-flex;align-items:center;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap;flex:none}
+.p-verde{background:var(--verde-suave);color:var(--verde)}
+.p-rojo{background:var(--rojo-suave);color:var(--rojo)}
+.p-gris{background:var(--gris-suave);color:var(--texto-2)}
+
+.filtros{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.filtros .campo{flex:1 1 220px}
+.filtros .campo label{font-size:13px;color:var(--gris)}
+.filtros input,.filtros select{height:46px;font-size:15px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+.chip{height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--borde-input);background:var(--blanco);font-size:14px;white-space:nowrap;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--azul);color:var(--blanco);border-color:var(--azul);font-weight:600}
+.casilla-linea{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;cursor:pointer}
+.casilla-linea input,.check-lista input{width:20px;height:20px;accent-color:var(--azul);flex:none}
+.contador{font-size:14px;color:var(--gris)}
+
+.ficha{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);padding:14px 16px;display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--texto)}
+.ficha:hover{border-color:var(--azul);color:var(--texto)}
+.ficha-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ficha h3{margin:0;font-size:17px;color:var(--azul)}
+.ficha .sup{font-size:13px;font-weight:600;color:var(--gris)}
+.ficha-datos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;font-size:14px}
+.ficha-datos span{display:block;color:var(--gris)}
+.ficha-datos b{font-weight:600}
+.ficha-pie{border-top:1px solid var(--linea);padding-top:10px;display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--gris)}
+.ficha-pie b{color:var(--azul)}
+.ficha-icono{display:flex;align-items:center;gap:14px}
+.ficha-icono .ic{width:44px;height:44px;flex:none;border-radius:22px;background:var(--gris-suave);color:var(--azul);display:flex;align-items:center;justify-content:center}
+.ficha-icono .ic.cuadrado{border-radius:10px}
+.incidencia-caja{background:var(--rojo-suave);border-radius:8px;padding:10px 12px;font-size:14px;color:var(--rojo-oscuro)}
+.lista-fichas{display:flex;flex-direction:column;gap:12px}
+
+.tabla-caja{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{background:var(--cabecera-tabla);text-align:left;padding:13px 16px;font-size:13px;font-weight:600;color:var(--gris);border-bottom:1px solid var(--borde);white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--linea);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:#F9FAFB}
+td a{font-weight:600;text-decoration:none}
+.der{text-align:right} .centro{text-align:center}
+.recorte{max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--texto-2)}
+
+/* ---------- Parte diario ---------- */
+.bloque{background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio);padding:14px 16px;display:flex;flex-direction:column;gap:6px;margin:0;min-width:0}
+.bloque legend{padding:0;font-size:16px;font-weight:700;color:var(--azul);float:left;width:100%;margin-bottom:6px}
+.bloque legend + *{clear:both}
+.bloque-cab{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.check-lista{display:flex;flex-direction:column}
+.check-lista label{display:flex;align-items:center;gap:12px;min-height:46px;border-top:1px solid var(--linea);cursor:pointer}
+.check-lista label:first-child{border-top:none}
+.btn-dictar{align-self:flex-start;margin-top:6px;height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--azul);background:var(--blanco);color:var(--azul);font-weight:600;font-size:15px;display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+.btn-dictar:hover{background:var(--fondo)}
+.btn-dictar.activo{background:var(--rojo);border-color:var(--rojo);color:var(--blanco);animation:latido 1.4s ease-in-out infinite}
+.btn-dictar.activo:hover{background:var(--rojo)}
+@keyframes latido{0%,100%{box-shadow:0 0 0 0 rgba(185,28,28,.45)}50%{box-shadow:0 0 0 8px rgba(185,28,28,0)}}
+textarea.dictando{border-color:var(--rojo);box-shadow:0 0 0 3px rgba(185,28,28,.15)}
+.filtros-lista{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:2px}
+.filtros-lista .campo label{font-size:13px;color:var(--gris);font-weight:600}
+.filtros-lista select,.filtros-lista input{height:44px;font-size:15px;padding:0 10px}
+.solo-marcados{min-height:40px;font-size:14px;color:var(--texto-2)}
+.solo-marcados input{accent-color:var(--azul)}
+.check-lista .det{font-size:13px;color:var(--gris)}
+.dos-botones{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.conmuta{height:46px;border-radius:10px;border:1px solid var(--borde-input);background:var(--blanco);font-weight:600;cursor:pointer}
+.conmuta.si-on[aria-pressed="true"]{background:var(--rojo);border-color:var(--rojo);color:var(--blanco)}
+.conmuta.no-on[aria-pressed="true"]{background:var(--verde);border-color:var(--verde);color:var(--blanco)}
+.incidencia-detalle{background:var(--rojo-suave);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.incidencia-detalle label{color:var(--rojo-oscuro)}
+.tipos{display:flex;flex-wrap:wrap;gap:8px;border:none;padding:0;margin:0}
+.tipos input{position:absolute;opacity:0;width:1px;height:1px}
+.tipos label{height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--rojo-borde);background:var(--blanco);color:var(--rojo-oscuro);display:inline-flex;align-items:center;cursor:pointer;font-size:14px;font-weight:500}
+.tipos input:checked + label{background:var(--rojo);border-color:var(--rojo);color:var(--blanco);font-weight:600}
+.tipos input:focus-visible + label{outline:3px solid var(--naranja-vivo);outline-offset:2px}
+
+/* ---------- Tareas ---------- */
+.segmento{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;background:var(--gris-suave);border-radius:10px;padding:4px}
+.segmento button{height:40px;border:none;border-radius:8px;background:transparent;color:var(--texto-2);cursor:pointer}
+.segmento button[aria-pressed="true"]{background:var(--blanco);color:var(--azul);font-weight:700;box-shadow:0 1px 2px rgba(15,42,68,.15)}
+.tareas-layout{display:flex;flex-direction:column;gap:16px}
+.tareas-layout.ver-lista .panel-cal,.tareas-layout.ver-cal .panel-lista{display:none}
+@media (min-width:900px){
+  .tareas-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(300px,1fr);align-items:start}
+  .tareas-layout.ver-lista .panel-cal,.tareas-layout.ver-cal .panel-lista{display:flex}
+}
+.panel-cal,.panel-lista{display:flex;flex-direction:column;gap:16px;min-width:0}
+.tarea{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-top:1px solid var(--linea)}
+.tarea:first-of-type{border-top:none}
+.tarea input{width:22px;height:22px;margin:1px 0 0;accent-color:var(--verde);flex:none;cursor:pointer}
+.tarea a{font-weight:600;text-decoration:none;color:var(--texto)}
+.tarea a:hover{color:var(--azul);text-decoration:underline}
+.tarea .m{font-size:13px;color:var(--gris)}
+.tarea.atrasada .m{color:var(--rojo)}
+.tarea.hecha a{text-decoration:line-through;color:var(--gris);font-weight:500}
+.grupo-tareas h3{margin:6px 0 2px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--gris)}
+.grupo-tareas h3.rojo{color:var(--rojo)}
+.cal-cab{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cal-cab h2{font-size:18px}
+.cal-nav{display:flex;gap:6px}
+.icono-btn{width:44px;height:44px;border-radius:10px;border:1px solid var(--borde);background:var(--blanco);color:var(--azul);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.cal-nav .hoy{width:auto;padding:0 14px;font-weight:600;font-size:14px}
+.cal-semana,.cal-rejilla{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.cal-semana span{text-align:center;font-size:12px;font-weight:600;color:var(--gris);padding:4px 0}
+.cal-dia{height:48px;border:none;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:0;cursor:pointer;font-size:15px;color:var(--texto);min-width:0}
+.cal-dia:hover{background:var(--fondo)}
+.cal-dia.otro{visibility:hidden}
+.cal-dia.es-hoy{background:var(--naranja-suave);color:var(--naranja);font-weight:700}
+.cal-dia.sel{background:var(--azul);color:var(--blanco);font-weight:700}
+.cal-dia .punto{width:6px;height:6px;border-radius:3px;background:transparent}
+.cal-dia .punto.on{background:var(--naranja)}
+.cal-dia .punto.tarde{background:var(--rojo)}
+.cal-dia.sel .punto.on{background:var(--naranja-vivo)}
+.cal-dia .mini{display:none}
+@media (min-width:900px){
+  .cal-semana span{text-align:left;padding:4px 6px}
+  .cal-dia{height:auto;min-height:86px;border:1px solid var(--linea);background:var(--blanco);align-items:stretch;justify-content:flex-start;padding:6px;gap:4px;font-size:14px;text-align:left}
+  .cal-dia .n{height:26px;min-width:26px;align-self:flex-start;display:flex;align-items:center;justify-content:center;padding:0 4px;border-radius:13px;font-weight:600}
+  .cal-dia.es-hoy{background:var(--blanco);color:var(--texto)}
+  .cal-dia.es-hoy .n{background:var(--naranja);color:var(--blanco)}
+  .cal-dia.sel{background:var(--blanco);color:var(--texto);border:2px solid var(--azul)}
+  .cal-dia .punto{display:none}
+  .cal-dia .mini{display:block;font-size:12px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--naranja-suave);color:var(--naranja-h);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cal-dia .mini.tarde{background:var(--rojo-suave);color:var(--rojo)}
+  .cal-dia .mini.mas{background:transparent;color:var(--gris);padding:0 6px}
+}
+
+/* ---------- Más ---------- */
+.menu-mas{list-style:none;margin:0;padding:0;background:var(--blanco);border:1px solid var(--borde);border-radius:var(--radio)}
+.menu-mas li+li{border-top:1px solid var(--linea)}
+.menu-mas a{display:flex;align-items:center;gap:14px;padding:14px 16px;min-height:56px;text-decoration:none;color:var(--texto);font-weight:600}
+.menu-mas a svg:last-child{margin-left:auto;color:var(--gris)}
+.chips-prox{display:flex;flex-wrap:wrap;gap:8px}
+.chips-prox span{padding:8px 12px;border-radius:999px;background:var(--gris-suave);color:var(--texto-2);font-size:14px}
+
+/* ---------- Aviso flotante y confirmación ---------- */
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom, 0px));z-index:60;background:var(--azul);color:var(--blanco);padding:12px 18px;border-radius:10px;font-weight:600;box-shadow:0 6px 20px rgba(15,42,68,.3);max-width:calc(100% - 32px)}
+.toast.error{background:var(--rojo)}
+@media (min-width:900px){ .toast{bottom:28px} }
+.velo{position:fixed;inset:0;z-index:70;background:rgba(15,42,68,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.dialogo{background:var(--blanco);border-radius:14px;padding:22px;max-width:420px;width:100%;display:flex;flex-direction:column;gap:16px}
+.dialogo p{margin:0;font-size:16px}
+.dialogo .botones{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.cargando{color:var(--gris);padding:24px 0}
+</style>
+</head>
+<body>
+
+<!-- Pantallas de acceso (conexión / login) -->
+<div id="acceso" class="acceso" hidden></div>
+
+<!-- Aplicación -->
+<div id="app" class="app" hidden>
+  <aside class="sidebar" aria-label="Menú">
+    <div class="marca-lateral"><strong>CONTROL DE OBRAS</strong><span>Seguimiento técnico de obra</span></div>
+    <nav class="nav-lateral" aria-label="Menú principal" id="nav-lateral"></nav>
+    <div class="proximamente-lat">
+      <b>PRÓXIMAMENTE</b>
+      <span>Informes con IA</span><span>Seguimiento de incidencias</span><span>Fotografías</span><span>PDF</span>
+    </div>
+    <div class="cuenta-lat"><span id="email-lat"></span><button type="button" data-salir>Cerrar sesión</button></div>
+  </aside>
+  <div class="principal">
+    <header class="cab" id="cab"></header>
+    <main class="contenido" id="vista" tabindex="-1"></main>
+  </div>
+  <nav class="menu-inf" aria-label="Menú principal" id="nav-inf"></nav>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="modal"></div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN · Pega aquí los datos de tu proyecto Supabase
+   (Supabase › Project Settings › API). La clave "anon" es
+   pública: está pensada para ir dentro de la app.
+   Si lo dejas vacío, la app los pedirá la primera vez.
+   ========================================================= */
+/* Cabecera de los informes PDF: nombre de la empresa y logo (imagen en data:URI) */
+const EMPRESA = {
+  nombre: '',
+  logo: 'data:image/jpeg;base64,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'
+};
+
+const CONFIG = {
+  url: 'https://saxxokealwypjqeftpkr.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNheHhva2VhbHd5cGpxZWZ0cGtyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMyMTU5MTUsImV4cCI6MjEwODc5MTkxNX0.FQX4zI50cQrRkdUgULlBrypZmEXKjflQLILDK4wedVE'
+};
+
+/* ---------- Utilidades ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const isoDe = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const hoyISO = () => isoDe(new Date());
+const fFecha = s => s ? s.split('-').reverse().join('/') : '—';
+const fCorta = s => s ? `${s.slice(8, 10)}/${s.slice(5, 7)}` : '';
+const mayus = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fLarga = s => mayus(new Date(s + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
+const fEUR = n => n == null ? '—' : Number(n).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+const fImporteCampo = n => n == null ? '' : Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const val = id => ($('#' + id)?.value ?? '').trim();
+function parseImporte(t) {
+  let s = String(t).replace(/[€\s]/g, '');
+  if (!s) return null;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  const n = Number(s);
+  return isFinite(n) ? Math.round(n * 100) / 100 : NaN;
+}
+function dniValido(v) {
+  const s = v.toUpperCase().replace(/[\s-]/g, '');
+  const letras = 'TRWAGMYFPDXBNJZSQVHLCKE';
+  let m = s.match(/^(\d{8})([A-Z])$/);
+  if (m) return letras[Number(m[1]) % 23] === m[2];
+  m = s.match(/^([XYZ])(\d{7})([A-Z])$/);
+  if (m) return letras[Number('XYZ'.indexOf(m[1]) + m[2]) % 23] === m[3];
+  return false;
+}
+const nombreCompleto = p => `${p.nombre} ${p.apellidos || ''}`.trim();
+
+const ICON = {
+  inicio: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  obras: '<path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/>',
+  partes: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 12h6M9 16h4"/>',
+  tareas: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="M9 15.5l2 2 4-4"/>',
+  personal: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.1.7 3.5 2.8 3.5 5.7"/>',
+  maquinaria: '<path d="M3 6h11v10H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  pdf: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5L12 17l2.5-2.5"/>',
+  micro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/>',
+  visitas: '<path d="M5 4h11l3 3v13H5z"/><path d="M15 4v4h4"/><path d="M8 12h8M8 16h6"/>',
+  persona: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/>',
+  mas: '<circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/>',
+  mas2: '<path d="M12 5v14M5 12h14"/>',
+  atras: '<path d="M15 5l-7 7 7 7"/>',
+  sig: '<path d="M9 5l7 7-7 7"/>'
+};
+const ic = (n, t = 22) => `<svg aria-hidden="true" width="${t}" height="${t}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+const CATEGORIAS = ['Encargado', 'Capataz', 'Oficial de 1ª', 'Oficial de 2ª', 'Ayudante', 'Peón', 'Operador de maquinaria', 'Otra'];
+const TIPOS_MAQUINA = ['Retroexcavadora', 'Excavadora', 'Miniexcavadora', 'Pala cargadora', 'Dúmper', 'Camión', 'Rodillo compactador', 'Motoniveladora', 'Grúa', 'Manipulador telescópico', 'Otra'];
+const ESTADOS = ['En curso', 'Parada', 'Terminada'];
+const claseEstado = e => e === 'En curso' ? 'p-verde' : e === 'Parada' ? 'p-rojo' : 'p-gris';
+
+function mensajeError(e) {
+  const m = (e && (e.message || e.error_description || String(e))) || 'Error desconocido';
+  if (/Invalid login credentials/i.test(m)) return 'Correo o contraseña incorrectos.';
+  if (/Email not confirmed/i.test(m)) return 'Falta confirmar el correo. Abre el enlace que te ha llegado y vuelve a entrar.';
+  if (/already registered/i.test(m)) return 'Ya existe una cuenta con ese correo. Usa "Entrar".';
+  if (/Password should be/i.test(m)) return 'La contraseña debe tener al menos 6 caracteres.';
+  if (/rate limit/i.test(m)) return 'Demasiados intentos seguidos. Espera un minuto y vuelve a probar.';
+  if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return 'No hay conexión con el servidor. Revisa la conexión a internet.';
+  if (/does not exist|Could not find the table|schema cache/i.test(m)) return 'Faltan las tablas en Supabase. Ejecuta el archivo supabase.sql en el SQL Editor.';
+  if (/Invalid API key|JWT/i.test(m)) return 'La clave de Supabase no es válida. Revisa la conexión.';
+  return m;
+}
+
+/* ---------- Aviso flotante y confirmación ---------- */
+let toastTimer;
+function aviso(texto, error = false) {
+  const t = $('#toast');
+  t.textContent = texto; t.className = 'toast' + (error ? ' error' : ''); t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, error ? 5000 : 2600);
+}
+function confirmar(texto, boton = 'Borrar') {
+  return new Promise(res => {
+    const m = $('#modal');
+    m.innerHTML = `<div class="velo"><div class="dialogo" role="alertdialog" aria-modal="true" aria-labelledby="dlg-t">
+      <p id="dlg-t">${esc(texto)}</p>
+      <div class="botones"><button type="button" class="btn btn-secundario" data-r="0">Cancelar</button>
+      <button type="button" class="btn btn-peligro" data-r="1">${esc(boton)}</button></div></div></div>`;
+    const cerrar = r => { m.innerHTML = ''; document.removeEventListener('keydown', tecla); res(r); };
+    const tecla = e => { if (e.key === 'Escape') cerrar(false); };
+    document.addEventListener('keydown', tecla);
+    $$('[data-r]', m).forEach(b => b.onclick = () => cerrar(b.dataset.r === '1'));
+    $('[data-r="0"]', m).focus();
+  });
+}
+
+/* ---------- Conexión ---------- */
+let sb = null, usuario = null, appIniciada = false;
+function leerConfig() {
+  if (CONFIG.url && CONFIG.anonKey) return { ...CONFIG, fija: true };
+  try { const c = JSON.parse(localStorage.getItem('cdo-conexion') || 'null'); if (c && c.url && c.anonKey) return c; } catch (e) {}
+  return null;
+}
+async function q(promesa) {
+  const { data, error } = await promesa;
+  if (error) throw error;
+  return data;
+}
+async function cuenta(promesa) {
+  const { count, error } = await promesa;
+  if (error) throw error;
+  return count || 0;
+}
+
+function pantallaConexion(msg = '') {
+  $('#app').hidden = true;
+  const a = $('#acceso'); a.hidden = false;
+  a.innerHTML = `<form class="acceso-caja" id="f-con" novalidate>
+    <div class="acceso-marca"><span>CONTROL DE OBRAS</span><h1>Conectar con Supabase</h1>
+    <p>Solo hace falta una vez en este dispositivo. Los datos están en Supabase › Project Settings › API.</p></div>
+    ${msg ? `<div class="aviso aviso-error">${esc(msg)}</div>` : ''}
+    <div class="campo"><label for="c-url">Project URL</label><input id="c-url" type="text" inputmode="url" autocomplete="off" placeholder="https://xxxx.supabase.co"></div>
+    <div class="campo"><label for="c-key">Clave anon public</label><textarea id="c-key" rows="3" autocomplete="off" spellcheck="false" placeholder="eyJhbGciOi…"></textarea></div>
+    <button class="btn btn-principal btn-bloque" type="submit">Guardar y continuar</button>
+  </form>`;
+  $('#f-con').onsubmit = e => {
+    e.preventDefault();
+    const url = val('c-url').replace(/\/+$/, ''), key = val('c-key').replace(/\s/g, '');
+    if (!/^https:\/\/.+/.test(url) || key.length < 20) { pantallaConexion('Revisa la URL (empieza por https://) y la clave.'); return; }
+    try { localStorage.setItem('cdo-conexion', JSON.stringify({ url, anonKey: key })); } catch (err) {}
+    iniciar();
+  };
+}
+
+function pantallaLogin(modo = 'entrar', msg = null) {
+  $('#app').hidden = true; appIniciada = false;
+  const a = $('#acceso'); a.hidden = false;
+  const titulos = { entrar: 'Entrar', crear: 'Crear cuenta', olvido: 'Recuperar contraseña', nueva: 'Nueva contraseña' };
+  a.innerHTML = `<form class="acceso-caja" id="f-acc" novalidate>
+    <div class="acceso-marca"><span>CONTROL DE OBRAS</span><h1>${titulos[modo]}</h1>
+    <p>${modo === 'crear' ? 'Crea tu usuario con tu correo y una contraseña.' : modo === 'olvido' ? 'Te enviaremos un enlace para cambiarla.' : modo === 'nueva' ? 'Escribe la nueva contraseña.' : 'Gestión y seguimiento de tus obras.'}</p></div>
+    ${msg ? `<div class="aviso ${msg.ok ? 'aviso-ok' : 'aviso-error'}">${esc(msg.t)}</div>` : ''}
+    ${modo !== 'nueva' ? `<div class="campo"><label for="a-email">Correo electrónico</label><input id="a-email" type="email" autocomplete="email" required></div>` : ''}
+    ${modo !== 'olvido' ? `<div class="campo"><label for="a-pass">Contraseña</label><input id="a-pass" type="password" autocomplete="${modo === 'entrar' ? 'current-password' : 'new-password'}" required minlength="6">${modo !== 'entrar' ? '<small>Mínimo 6 caracteres.</small>' : ''}</div>` : ''}
+    <button class="btn btn-principal btn-bloque" type="submit" id="a-btn">${modo === 'entrar' ? 'Entrar' : modo === 'crear' ? 'Crear cuenta' : modo === 'olvido' ? 'Enviar enlace' : 'Guardar contraseña'}</button>
+    <div style="display:flex;flex-direction:column">
+      ${modo === 'entrar' ? `<button type="button" class="enlace-boton" data-modo="crear">Es mi primera vez: crear cuenta</button><button type="button" class="enlace-boton" data-modo="olvido">He olvidado la contraseña</button>` : ''}
+      ${modo === 'crear' || modo === 'olvido' ? `<button type="button" class="enlace-boton" data-modo="entrar">Ya tengo cuenta: entrar</button>` : ''}
+      ${!leerConfig()?.fija && modo === 'entrar' ? `<button type="button" class="enlace-boton" data-cambiar-con>Cambiar conexión con Supabase</button>` : ''}
+    </div>
+  </form>`;
+  $$('[data-modo]', a).forEach(b => b.onclick = () => pantallaLogin(b.dataset.modo));
+  const cc = $('[data-cambiar-con]', a); if (cc) cc.onclick = () => pantallaConexion();
+  $('#f-acc').onsubmit = async e => {
+    e.preventDefault();
+    const email = val('a-email'), pass = $('#a-pass')?.value || '';
+    if (modo !== 'nueva' && !/^\S+@\S+\.\S+$/.test(email)) return pantallaLogin(modo, { t: 'Escribe un correo válido.' });
+    if (modo !== 'olvido' && pass.length < 6) return pantallaLogin(modo, { t: 'La contraseña debe tener al menos 6 caracteres.' });
+    const btn = $('#a-btn'); btn.disabled = true;
+    try {
+      if (modo === 'entrar') {
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) throw error;
+      } else if (modo === 'crear') {
+        const { data, error } = await sb.auth.signUp({ email, password: pass, options: { emailRedirectTo: location.origin + location.pathname } });
+        if (error) throw error;
+        if (!data.session) pantallaLogin('entrar', { ok: true, t: 'Cuenta creada. Te hemos enviado un correo: abre el enlace para confirmarla y después entra aquí.' });
+      } else if (modo === 'olvido') {
+        const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+        if (error) throw error;
+        pantallaLogin('entrar', { ok: true, t: 'Si el correo existe, te llegará un enlace para cambiar la contraseña.' });
+      } else if (modo === 'nueva') {
+        const { error } = await sb.auth.updateUser({ password: pass });
+        if (error) throw error;
+        aviso('Contraseña cambiada');
+        arrancarApp();
+      }
+    } catch (err) {
+      pantallaLogin(modo, { t: mensajeError(err) });
+    }
+  };
+  const primero = $('input', a); if (primero) primero.focus();
+}
+
+async function iniciar() {
+  const cfg = leerConfig();
+  if (!cfg) return pantallaConexion();
+  if (!window.supabase) return pantallaConexion('No se ha podido cargar la librería de Supabase. Revisa la conexión a internet y recarga.');
+  let recuperando = /type=recovery/.test(location.hash);
+  try { sb = window.supabase.createClient(cfg.url, cfg.anonKey); }
+  catch (e) { return pantallaConexion('La URL o la clave no son válidas.'); }
+  sb.auth.onAuthStateChange((evento, sesion) => {
+    if (evento === 'PASSWORD_RECOVERY') { recuperando = true; usuario = sesion?.user || null; pantallaLogin('nueva'); return; }
+    if (evento === 'SIGNED_OUT') { usuario = null; pantallaLogin(); return; }
+    if (sesion && !recuperando && !appIniciada) { usuario = sesion.user; setTimeout(arrancarApp, 0); }
+  });
+  const { data: { session } } = await sb.auth.getSession();
+  if (recuperando) return;
+  if (!session) return pantallaLogin();
+  usuario = session.user;
+  arrancarApp();
+}
+
+async function salir() { await sb.auth.signOut(); }
+
+/* ---------- Estructura y navegación ---------- */
+const NAV_LATERAL = [['inicio', 'Inicio'], ['obras', 'Obras'], ['partes', 'Partes diarios'], ['visitas', 'Anotaciones'], ['tareas', 'Tareas pendientes'], ['personal', 'Personal'], ['maquinaria', 'Maquinaria']];
+const NAV_INF = [['inicio', 'Inicio'], ['obras', 'Obras'], ['partes', 'Partes'], ['tareas', 'Tareas'], ['mas', 'Más']];
+const SECCION = { inicio: 'inicio', obras: 'obras', obra: 'obras', partes: 'partes', parte: 'partes', tareas: 'tareas', tarea: 'tareas', personal: 'personal', persona: 'personal', maquinaria: 'maquinaria', maquina: 'maquinaria', visitas: 'visitas', visita: 'visitas', mas: 'mas' };
+
+function arrancarApp() {
+  if (appIniciada) return;
+  appIniciada = true;
+  $('#acceso').hidden = true; $('#acceso').innerHTML = '';
+  $('#app').hidden = false;
+  $('#email-lat').textContent = usuario?.email || '';
+  $('#nav-lateral').innerHTML = NAV_LATERAL.map(([k, t]) => `<a href="#${k}" data-nav="${k}">${ic(k, 20)}${t}</a>`).join('');
+  $('#nav-inf').innerHTML = NAV_INF.map(([k, t]) => `<a href="#${k}" data-nav="${k}">${ic(k)}${t}</a>`).join('');
+  $$('[data-salir]').forEach(b => b.onclick = salir);
+  if (!location.hash || /access_token|type=/.test(location.hash)) history.replaceState(null, '', location.pathname + '#inicio');
+  window.onhashchange = pintar;
+  pintar();
+}
+
+let turno = 0;
+function vigente(t) { return t === turno; }
+function cabecera({ titulo, sub = '', volver = '', acciones = '' }) {
+  $('#cab').innerHTML = `
+    ${volver ? `<a class="cab-volver" href="${volver}" aria-label="Volver">${ic('atras')}</a>` : ''}
+    <div class="cab-textos">${volver ? '' : '<span class="cab-marca">CONTROL DE OBRAS</span>'}<h1>${esc(titulo)}</h1>${sub ? `<p class="cab-sub">${esc(sub)}</p>` : ''}</div>
+    ${acciones ? `<div class="cab-acciones">${acciones}</div>` : ''}`;
+  document.title = titulo === 'Inicio' ? 'Control de Obras' : `${titulo} · Control de Obras`;
+}
+const botonCab = (href, texto, corto) => `<a class="btn btn-principal" href="${href}">${ic('mas2', 18)}<span class="solo-pc">${texto}</span><span class="solo-movil">${corto || texto}</span></a>`;
+
+async function pintar() {
+  const t = ++turno;
+  const [nombre, ...resto] = (location.hash.slice(1) || 'inicio').split('/');
+  const param = resto.join('/');
+  const fn = VISTAS[nombre] || vistaInicio;
+  const sec = SECCION[nombre] || 'inicio';
+  const secInf = ['personal', 'maquinaria', 'visitas'].includes(sec) ? 'mas' : sec;
+  $$('#nav-lateral a, #nav-inf a').forEach(a => a.removeAttribute('aria-current'));
+  $$('#nav-lateral a').forEach(a => { if (a.dataset.nav === sec) a.setAttribute('aria-current', 'page'); });
+  $$('#nav-inf a').forEach(a => { if (a.dataset.nav === secInf) a.setAttribute('aria-current', 'page'); });
+  pararDictado();
+  $('#vista').innerHTML = '<p class="cargando">Cargando…</p>';
+  window.scrollTo(0, 0);
+  try {
+    await fn(param, t);
+    if (vigente(t)) prepararDictado($('#vista'));
+  } catch (e) {
+    if (!vigente(t)) return;
+    console.error(e);
+    if (/JWT expired|not authenticated/i.test(e?.message || '')) { await sb.auth.signOut(); return; }
+    $('#vista').innerHTML = `<div class="tarjeta"><h2>No se ha podido cargar</h2><p class="vacio">${esc(mensajeError(e))}</p><div><button class="btn btn-secundario" type="button" id="reintentar">Reintentar</button></div></div>`;
+    $('#reintentar').onclick = pintar;
+  }
+}
+
+/* ---------- Componentes compartidos ---------- */
+function itemTarea(t, hoy, conFecha = true) {
+  const tarde = !t.hecha && t.fecha < hoy;
+  const meta = [conFecha ? (tarde ? `Venció el ${fCorta(t.fecha)}` : t.fecha === hoy ? 'Hoy' : fFecha(t.fecha)) : '', t.obras?.nombre || ''].filter(Boolean).join(' · ');
+  return `<div class="tarea${tarde ? ' atrasada' : ''}${t.hecha ? ' hecha' : ''}">
+    <input type="checkbox" data-hecha="${t.id}" ${t.hecha ? 'checked' : ''} aria-label="Marcar como hecha: ${esc(t.texto)}">
+    <div class="pila"><a href="#tarea/${t.id}">${esc(t.texto)}</a>${meta ? `<span class="m">${esc(meta)}</span>` : ''}</div>
+  </div>`;
+}
+function enlazarCasillasTareas(raiz, alCambiar) {
+  $$('[data-hecha]', raiz).forEach(c => c.onchange = async () => {
+    c.disabled = true;
+    try {
+      await q(sb.from('tareas').update({ hecha: c.checked }).eq('id', c.dataset.hecha));
+      aviso(c.checked ? 'Tarea hecha' : 'Tarea pendiente de nuevo');
+      alCambiar();
+    } catch (e) { c.checked = !c.checked; c.disabled = false; aviso(mensajeError(e), true); }
+  });
+}
+async function empresasConocidas() {
+  const [p, m] = await Promise.all([q(sb.from('personal').select('empresa')), q(sb.from('maquinaria').select('empresa'))]);
+  return [...new Set([...p, ...m].map(x => (x.empresa || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+}
+const opcionesObra = (obras, sel, vacio) => (vacio ? `<option value="">${vacio}</option>` : '') +
+  obras.map(o => `<option value="${o.id}" ${o.id === sel ? 'selected' : ''}>${esc(o.numero)} · ${esc(o.nombre)}${o.estado === 'Terminada' ? ' (terminada)' : ''}</option>`).join('');
+/* ---------- Dictado por voz (reconocimiento de voz del navegador) ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const esAndroid = /Android/i.test(navigator.userAgent);
+let dictado = null;
+function limpiarDictado(t, inicioFrase) {
+  return t.replace(/\s*\bpunto y aparte\b\s*/gi, '.\n').replace(/\s*\bpunto y seguido\b\s*/gi, '. ')
+    .replace(/\s*\bnueva l[ií]nea\b\s*/gi, '\n').replace(/[ \t]+/g, ' ')
+    .replace(inicioFrase ? /(^|[.\n]\s*)([a-záéíóúñü])/g : /([.\n]\s*)([a-záéíóúñü])/g, (m, a, b) => a + b.toUpperCase());
+}
+function pararDictado() { if (dictado) { dictado.activo = false; try { dictado.rec.stop(); } catch (e) {} } }
+function empezarDictado(ta, b) {
+  const st = { ta, b, activo: true, rec: null };
+  const arrancar = () => {
+    const base = ta.value;
+    const sep = base && !/\s$/.test(base) ? ' ' : '';
+    const rec = new SR();
+    rec.lang = 'es-ES'; rec.interimResults = true; rec.continuous = !esAndroid;
+    let fin = '';
+    rec.onresult = e => {
+      let prov = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) fin += r[0].transcript.trim() + ' '; else prov += r[0].transcript;
+      }
+      const nuevo = limpiarDictado((fin + prov).trimStart(), !base.trim() || /[.!?\n]\s*$/.test(base));
+      ta.value = base + (nuevo ? sep : '') + nuevo;
+      ta.scrollTop = ta.scrollHeight;
+    };
+    rec.onerror = e => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { st.activo = false; aviso('No hay permiso para usar el micrófono. Actívalo en los ajustes del navegador para esta página.', true); }
+      else if (e.error === 'no-speech') { if (!esAndroid) aviso('No te he oído. Pulsa Dictar y vuelve a probar.', true); }
+      else if (e.error === 'network') { st.activo = false; aviso('El dictado necesita conexión a internet.', true); }
+      else if (e.error !== 'aborted') { st.activo = false; aviso('El dictado se ha detenido (' + e.error + ').', true); }
+    };
+    rec.onend = () => {
+      ta.value = ta.value.replace(/[ \t]+$/, '');
+      if (st.activo && esAndroid && dictado === st) { setTimeout(() => { if (st.activo) arrancar(); }, 250); return; }
+      b.classList.remove('activo'); ta.classList.remove('dictando'); b.setAttribute('aria-pressed', 'false'); $('span', b).textContent = 'Dictar';
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+      if (dictado === st) dictado = null;
+    };
+    st.rec = rec;
+    try { rec.start(); } catch (e) { st.activo = false; aviso('No se ha podido empezar a dictar. Prueba otra vez.', true); }
+  };
+  dictado = st;
+  b.classList.add('activo'); ta.classList.add('dictando'); b.setAttribute('aria-pressed', 'true'); $('span', b).textContent = 'Parar';
+  arrancar();
+}
+function prepararDictado(raiz) {
+  if (!SR) return;
+  $$('textarea[data-dictado]', raiz).forEach(ta => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn-dictar'; b.setAttribute('aria-pressed', 'false');
+    b.setAttribute('aria-label', 'Dictar por voz en este cuadro');
+    b.innerHTML = ic('micro', 18) + '<span>Dictar</span>';
+    ta.insertAdjacentElement('afterend', b);
+    b.onclick = () => {
+      const mismo = dictado && dictado.b === b;
+      pararDictado();
+      if (!mismo) empezarDictado(ta, b);
+    };
+  });
+}
+const normaliza = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Lista de casillas con filtro por empresa y buscador (personal y maquinaria del parte)
+function listaFiltrable(tipo, items, sel, nombre, detalle, textoBusqueda, phBuscar, plural) {
+  const empresas = [...new Set(items.map(x => (x.empresa || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  const sinEmpresa = items.some(x => !(x.empresa || '').trim());
+  return `<div data-filtrable="${tipo}">
+    <div class="filtros-lista">
+      <div class="campo"><label for="${tipo}-f-emp">Empresa</label><select id="${tipo}-f-emp"><option value="">Todas</option>${empresas.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}${sinEmpresa ? '<option value="__sin__">Sin empresa</option>' : ''}</select></div>
+      <div class="campo"><label for="${tipo}-f-txt">Buscar</label><input id="${tipo}-f-txt" type="search" placeholder="${phBuscar}" autocomplete="off"></div>
+    </div>
+    <label class="casilla-linea solo-marcados"><input type="checkbox" id="${tipo}-f-marc"> Ver solo los marcados</label>
+    <div class="check-lista">${items.map(x => `<label data-emp="${esc((x.empresa || '').trim() || '__sin__')}" data-txt="${esc(normaliza(textoBusqueda(x)))}"><input type="checkbox" name="${tipo}" value="${x.id}" ${sel.has(x.id) ? 'checked' : ''}><span class="pila"><span>${esc(nombre(x))}</span><span class="det">${esc(detalle(x))}</span></span></label>`).join('')}</div>
+    <p class="vacio" id="${tipo}-f-vacio" hidden>Ningún resultado. Cambia la empresa o la búsqueda.</p>
+  </div>`;
+}
+function irA(h) { if (location.hash === h) pintar(); else location.hash = h; }
+function marcarError(id, msg) {
+  const el = $('#' + id); if (el) { el.classList.add('invalido'); el.setAttribute('aria-invalid', 'true'); el.focus(); }
+  const e = $('#error-form'); if (e) { e.textContent = msg; e.hidden = false; }
+}
+function limpiarErrores() { $$('.invalido').forEach(el => { el.classList.remove('invalido'); el.removeAttribute('aria-invalid'); }); const e = $('#error-form'); if (e) e.hidden = true; }
+async function guardando(btn, fn) {
+  btn.disabled = true; const txt = btn.textContent; btn.textContent = 'Guardando…';
+  try { await fn(); } catch (e) { aviso(mensajeError(e), true); btn.disabled = false; btn.textContent = txt; }
+}
+
+/* =================== INFORMES PDF =================== */
+const PDF_LIBS = [
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'
+];
+function cargarScript(src) {
+  return new Promise((ok, ko) => {
+    const ya = document.querySelector(`script[src="${src}"]`);
+    if (ya && ya.dataset.cargado) return ok();
+    const s = ya || document.createElement('script');
+    s.src = src; s.async = false;
+    s.onload = () => { s.dataset.cargado = '1'; ok(); };
+    s.onerror = () => ko(new Error('No se ha podido cargar el generador de PDF. Revisa la conexión a internet.'));
+    if (!ya) document.head.appendChild(s);
+  });
+}
+async function cargarPDF() {
+  if (!(window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable)) for (const s of PDF_LIBS) await cargarScript(s);
+  return window.jspdf.jsPDF;
+}
+const C_AZUL = [15, 42, 68], C_NARANJA = [194, 65, 12], C_ROJO = [185, 28, 28], C_VERDE = [21, 128, 61], C_GRIS = [82, 96, 109], C_LINEA = [221, 226, 232], C_FONDO = [241, 243, 245];
+const fechaLargaAnio = s => `${fLarga(s)} de ${s.slice(0, 4)}`;
+const nombreArchivo = t => t.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9_-]+/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+
+// Documento A4 con cabecera y pie en todas las páginas
+async function nuevoInforme(titulo) {
+  const JsPDF = await cargarPDF();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+  const M = 15, W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+  let logoProp = null;
+  if (EMPRESA.logo) {
+    try { const p = doc.getImageProperties(EMPRESA.logo); logoProp = p.width / p.height; } catch (e) { logoProp = null; }
+  }
+  const cabeceraPagina = () => {
+    let x = M;
+    if (logoProp) {
+      const h = 11, w = Math.min(62, h * logoProp);
+      doc.addImage(EMPRESA.logo, M, 10, w, w / logoProp);
+      x = M + w + 5;
+    }
+    doc.setTextColor(...C_AZUL);
+    if (EMPRESA.nombre) { doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.text(EMPRESA.nombre, x, 15.5); }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text(titulo.toUpperCase(), W - M, 15.5, { align: 'right' });
+    doc.setDrawColor(...C_AZUL); doc.setLineWidth(0.5); doc.line(M, 27, W - M, 27);
+  };
+  const ahora = new Date();
+  const generado = `${pad(ahora.getDate())}/${pad(ahora.getMonth() + 1)}/${ahora.getFullYear()} ${pad(ahora.getHours())}:${pad(ahora.getMinutes())}`;
+  const terminar = () => {
+    const n = doc.getNumberOfPages();
+    for (let i = 1; i <= n; i++) {
+      doc.setPage(i); cabeceraPagina();
+      doc.setDrawColor(...C_LINEA); doc.setLineWidth(0.3); doc.line(M, H - 14, W - M, H - 14);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...C_GRIS);
+      doc.text(`Control de Obras · Generado el ${generado}`, M, H - 9);
+      doc.text(`Página ${i} de ${n}`, W - M, H - 9, { align: 'right' });
+    }
+  };
+  // Tabla con estilo común
+  const tabla = (opts) => doc.autoTable(Object.assign({
+    margin: { top: 34, left: M, right: M, bottom: 20 },
+    theme: 'grid',
+    styles: { font: 'helvetica', fontSize: 9.5, cellPadding: 2.4, textColor: [31, 41, 51], lineColor: C_LINEA, lineWidth: 0.2, overflow: 'linebreak', valign: 'top' },
+    headStyles: { fillColor: C_FONDO, textColor: C_GRIS, fontStyle: 'bold', fontSize: 8.5 },
+    rowPageBreak: 'auto'
+  }, opts, { startY: opts.startY || siguiente() }));
+  const siguiente = (extra = 7) => (doc.lastAutoTable ? doc.lastAutoTable.finalY + extra : 34);
+  const seccion = (texto, color = C_AZUL) => {
+    let y = siguiente(9);
+    if (y > H - 40) { doc.addPage(); y = 34; }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...color);
+    doc.text(texto.toUpperCase(), M, y);
+    return y + 3;
+  };
+  const datosClave = (filas) => tabla({
+    startY: 34, theme: 'plain', body: filas,
+    styles: { fontSize: 10, cellPadding: { top: 1.6, bottom: 1.6, left: 0, right: 2 } },
+    columnStyles: { 0: { cellWidth: 34, fontStyle: 'bold', textColor: C_GRIS }, 1: { textColor: [31, 41, 51] } }
+  });
+  const bloqueTexto = (txt, opts = {}) => tabla({ startY: seccion(opts.titulo, opts.colorTitulo), body: [[txt]], theme: 'plain',
+    styles: Object.assign({ fontSize: 10, cellPadding: 3, fillColor: opts.fondo || C_FONDO, textColor: opts.color || [31, 41, 51], lineHeight: 1.3 }, opts.estilos || {}) });
+  return { doc, M, W, H, tabla, seccion, datosClave, bloqueTexto, siguiente, terminar };
+}
+
+async function pdfParte(id) {
+  const p = await q(sb.from('partes').select('*,obras(numero,nombre),parte_personal(personal(nombre,apellidos,dni,categoria,empresa)),parte_maquinaria(maquinaria(nombre,tipo,empresa))').eq('id', id).single());
+  const r = await nuevoInforme('Parte diario de obra');
+  const { doc, M, W, H } = r;
+  r.datosClave([
+    ['Obra', `${p.obras?.numero || ''} · ${p.obras?.nombre || ''}`],
+    ['Fecha', fechaLargaAnio(p.fecha)]
+  ]);
+  r.bloqueTexto(p.trabajos || 'Sin trabajos anotados.', { titulo: 'Trabajos realizados' });
+  const pers = (p.parte_personal || []).map(x => x.personal).filter(Boolean)
+    .sort((a, b) => (a.empresa || '').localeCompare(b.empresa || '', 'es') || nombreCompleto(a).localeCompare(nombreCompleto(b), 'es'));
+  if (pers.length) r.tabla({ startY: r.seccion(`Personal (${pers.length})`), head: [['Nombre y apellidos', 'DNI / NIE', 'Categoría', 'Empresa']],
+    body: pers.map(x => [nombreCompleto(x), x.dni || '—', x.categoria || '—', x.empresa || '—']), columnStyles: { 1: { cellWidth: 26 } } });
+  else r.bloqueTexto('No se ha registrado personal en este parte.', { titulo: 'Personal' });
+  const maq = (p.parte_maquinaria || []).map(x => x.maquinaria).filter(Boolean);
+  if (maq.length) r.tabla({ startY: r.seccion(`Maquinaria (${maq.length})`), head: [['Máquina', 'Tipo', 'Empresa']],
+    body: maq.map(x => [x.nombre, x.tipo || '—', x.empresa || '—']) });
+  else r.bloqueTexto('No se ha registrado maquinaria en este parte.', { titulo: 'Maquinaria' });
+  if (p.hay_incidencia) r.bloqueTexto(`${p.incidencia_tipo || 'Incidencia'}: ${p.incidencia_descripcion || ''}`.trim(),
+    { titulo: 'Incidencias', colorTitulo: C_ROJO, fondo: [253, 236, 236], color: [138, 28, 28] });
+  else r.bloqueTexto('Sin incidencias.', { titulo: 'Incidencias', fondo: [230, 244, 234], color: C_VERDE });
+  // Espacio para firma
+  let y = r.siguiente(12);
+  if (y + 30 > H - 20) { doc.addPage(); y = 34; }
+  const wF = 75;
+  doc.setDrawColor(...C_LINEA); doc.setLineWidth(0.3); doc.rect(W - M - wF, y, wF, 28);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...C_GRIS);
+  doc.text('Firma del responsable', W - M - wF + 3, y + 5);
+  r.terminar();
+  doc.save(`${nombreArchivo(`Parte_${p.obras?.numero || 'obra'}_${p.fecha}`)}.pdf`);
+}
+
+async function pdfAnotaciones(obraId, desde, hasta) {
+  const obra = await q(sb.from('obras').select('numero,nombre').eq('id', obraId).single());
+  let consulta = sb.from('visitas').select('fecha,notas').eq('obra_id', obraId).order('fecha').order('created_at');
+  if (desde) consulta = consulta.gte('fecha', desde);
+  if (hasta) consulta = consulta.lte('fecha', hasta);
+  const notas = await q(consulta);
+  if (!notas.length) { aviso('No hay anotaciones de esa obra en esas fechas.', true); return; }
+  const r = await nuevoInforme('Anotaciones de obra');
+  const periodo = desde && hasta ? `Del ${fFecha(desde)} al ${fFecha(hasta)}` : desde ? `Desde el ${fFecha(desde)}` : hasta ? `Hasta el ${fFecha(hasta)}` : `Del ${fFecha(notas[0].fecha)} al ${fFecha(notas[notas.length - 1].fecha)}`;
+  r.datosClave([
+    ['Obra', `${obra.numero} · ${obra.nombre}`],
+    ['Periodo', periodo],
+    ['Anotaciones', String(notas.length)]
+  ]);
+  r.tabla({ startY: r.siguiente(6), head: [['Fecha', 'Anotación']],
+    body: notas.map(n => [fFecha(n.fecha), n.notas]),
+    styles: { fontSize: 10, cellPadding: 3, lineHeight: 1.3 },
+    columnStyles: { 0: { cellWidth: 24, fontStyle: 'bold', textColor: C_AZUL } } });
+  r.terminar();
+  r.doc.save(`${nombreArchivo(`Anotaciones_${obra.numero}${desde ? '_' + desde : ''}${hasta ? '_' + hasta : ''}`)}.pdf`);
+}
+
+async function botonPDF(btn, fn) {
+  btn.disabled = true; const txt = btn.innerHTML; btn.innerHTML = 'Preparando…';
+  try { await fn(); } catch (e) { console.error(e); aviso(mensajeError(e), true); }
+  btn.disabled = false; btn.innerHTML = txt;
+}
+
+/* =================== INICIO =================== */
+async function vistaInicio(_, t) {
+  const hoy = hoyISO(), mes1 = hoy.slice(0, 8) + '01';
+  const [obras, partes, nPartes, nPers, nMaq, tareas] = await Promise.all([
+    q(sb.from('obras').select('id,numero,nombre,estado,fecha_fin').order('numero')),
+    q(sb.from('partes').select('id,fecha,trabajos,hay_incidencia,incidencia_tipo,obras(nombre)').order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(5)),
+    cuenta(sb.from('partes').select('id', { count: 'exact', head: true }).gte('fecha', mes1)),
+    cuenta(sb.from('personal').select('id', { count: 'exact', head: true })),
+    cuenta(sb.from('maquinaria').select('id', { count: 'exact', head: true })),
+    q(sb.from('tareas').select('id,texto,fecha,hecha,obras(nombre)').eq('hecha', false).lte('fecha', hoy).order('fecha'))
+  ]);
+  if (!vigente(t)) return;
+  const activas = obras.filter(o => o.estado === 'En curso');
+  cabecera({ titulo: 'Inicio', sub: `${fLarga(hoy)} de ${hoy.slice(0, 4)}`,
+    acciones: `<a class="btn btn-secundario" href="#obra/nueva">Nueva obra</a>${botonCab('#parte/nuevo', 'Nuevo parte diario', 'Parte')}` });
+  const atrasadas = tareas.filter(x => x.fecha < hoy).length;
+  $('#vista').innerHTML = `
+    <p class="vacio solo-movil">${esc(fLarga(hoy))}</p>
+    <div class="acciones-rapidas solo-movil">
+      <a class="btn btn-principal btn-bloque" href="#parte/nuevo">${ic('mas2', 20)}Nuevo parte diario</a>
+      <a class="btn btn-secundario" href="#obra/nueva">Nueva obra</a>
+    </div>
+    <section class="resumen" aria-label="Resumen">
+      <a class="dato" href="#obras"><span>Obras activas</span><b>${activas.length}</b></a>
+      <a class="dato" href="#partes"><span>Partes este mes</span><b>${nPartes}</b></a>
+      <a class="dato" href="#personal"><span>Personal registrado</span><b>${nPers}</b></a>
+      <a class="dato" href="#maquinaria"><span>Maquinaria registrada</span><b>${nMaq}</b></a>
+    </section>
+    <div class="rejilla-inicio">
+      <section class="tarjeta" id="tareas-hoy">
+        <div class="tarjeta-cab"><h2>Tareas de hoy</h2><a href="#tareas">Ver calendario</a></div>
+        ${atrasadas ? `<span class="pastilla p-rojo" style="align-self:flex-start">${atrasadas} atrasada${atrasadas > 1 ? 's' : ''}</span>` : ''}
+        ${tareas.length ? `<div>${tareas.map(x => itemTarea(x, hoy)).join('')}</div>` : '<p class="vacio">No tienes tareas para hoy.</p>'}
+        <a class="enlace-accion" href="#tarea/nueva">+ Añadir tarea</a>
+      </section>
+      <section class="tarjeta">
+        <div class="tarjeta-cab"><h2>Obras activas</h2><a href="#obras">Ver todas</a></div>
+        ${activas.length ? `<ul class="lista-filas">${activas.slice(0, 6).map(o => `<li><a class="fila-enlace" href="#obra/${o.id}"><span class="pila"><span class="t">${esc(o.nombre)}</span><span class="m">Nº ${esc(o.numero)}${o.fecha_fin ? ' · Fin previsto ' + fFecha(o.fecha_fin) : ''}</span></span>${ic('sig', 18)}</a></li>`).join('')}</ul>`
+          : `<div class="vacio-caja"><p class="vacio">${obras.length ? 'No hay obras en curso.' : 'Todavía no hay obras registradas.'}</p><a class="enlace-accion" href="#obra/nueva">${obras.length ? 'Nueva obra' : 'Crear la primera obra'}</a></div>`}
+      </section>
+      <section class="tarjeta">
+        <div class="tarjeta-cab"><h2>Últimos partes diarios</h2><a href="#partes">Ver todos</a></div>
+        ${partes.length ? `<ul class="lista-filas">${partes.map(p => `<li><a class="fila-enlace" href="#parte/${p.id}"><span class="pila"><span class="t">${esc(p.obras?.nombre || '—')}</span><span class="m">${fFecha(p.fecha)}</span></span>${p.hay_incidencia ? `<span class="pastilla p-rojo">${esc(p.incidencia_tipo || 'Incidencia')}</span>` : '<span class="pastilla p-verde">Sin incidencias</span>'}</a></li>`).join('')}</ul>`
+          : `<div class="vacio-caja"><p class="vacio">Aún no hay partes diarios.</p><a class="enlace-accion" href="#parte/nuevo">Crear el primero</a></div>`}
+      </section>
+    </div>`;
+  enlazarCasillasTareas($('#tareas-hoy'), pintar);
+}
+
+/* =================== OBRAS =================== */
+const fObras = { texto: '', estado: '' };
+async function vistaObras(_, t) {
+  const obras = await q(sb.from('obras').select('*').order('numero'));
+  if (!vigente(t)) return;
+  cabecera({ titulo: 'Obras', sub: 'Listado de todas tus obras', acciones: botonCab('#obra/nueva', 'Nueva obra', 'Nueva') });
+  $('#vista').innerHTML = `
+    <div class="filtros">
+      <div class="campo"><label for="b-obra">Buscar</label><input id="b-obra" type="search" placeholder="Número o nombre de la obra" value="${esc(fObras.texto)}"></div>
+    </div>
+    <div class="chips" role="group" aria-label="Filtrar por estado">
+      ${['', ...ESTADOS].map(e => `<button type="button" class="chip" data-estado="${e}" aria-pressed="${fObras.estado === e}">${e || 'Todas'}</button>`).join('')}
+    </div>
+    <div id="lista-obras"></div>`;
+  const pintarLista = () => {
+    const txt = fObras.texto.toLowerCase();
+    const l = obras.filter(o => (!fObras.estado || o.estado === fObras.estado) && (!txt || `${o.numero} ${o.nombre}`.toLowerCase().includes(txt)));
+    const c = $('#lista-obras');
+    if (!obras.length) { c.innerHTML = `<div class="tarjeta"><div class="vacio-caja"><p class="vacio">Todavía no hay obras registradas.</p><a class="enlace-accion" href="#obra/nueva">Crear la primera obra</a></div></div>`; return; }
+    if (!l.length) { c.innerHTML = '<p class="vacio">Ninguna obra coincide con la búsqueda.</p>'; return; }
+    c.innerHTML = `
+      <div class="lista-fichas solo-movil">${l.map(o => `<a class="ficha" href="#obra/${o.id}">
+        <div class="ficha-cab"><div class="pila"><span class="sup">Nº ${esc(o.numero)}</span><h3>${esc(o.nombre)}</h3></div><span class="pastilla ${claseEstado(o.estado)}">${o.estado}</span></div>
+        <div class="ficha-datos"><div><span>Inicio previsto</span><b>${fFecha(o.fecha_inicio)}</b></div><div><span>Fin previsto</span><b>${fFecha(o.fecha_fin)}</b></div></div>
+        <div class="ficha-pie"><span>Presupuesto</span><b class="num">${fEUR(o.presupuesto)}</b></div></a>`).join('')}</div>
+      <div class="tabla-caja solo-pc"><table><thead><tr><th>Nº obra</th><th>Nombre</th><th>Inicio previsto</th><th>Fin previsto</th><th>Estado</th><th class="der">Presupuesto</th></tr></thead><tbody>
+        ${l.map(o => `<tr data-ir="#obra/${o.id}"><td class="num">${esc(o.numero)}</td><td><a href="#obra/${o.id}">${esc(o.nombre)}</a></td><td class="num">${fFecha(o.fecha_inicio)}</td><td class="num">${fFecha(o.fecha_fin)}</td><td><span class="pastilla ${claseEstado(o.estado)}">${o.estado}</span></td><td class="der num">${fEUR(o.presupuesto)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="contador">${l.length} obra${l.length !== 1 ? 's' : ''}</p>`;
+    $$('[data-ir]', c).forEach(r => r.onclick = e => { if (!e.target.closest('a')) location.hash = r.dataset.ir; });
+  };
+  $('#b-obra').oninput = e => { fObras.texto = e.target.value; pintarLista(); };
+  $$('[data-estado]').forEach(b => b.onclick = () => { fObras.estado = b.dataset.estado; $$('[data-estado]').forEach(x => x.setAttribute('aria-pressed', x === b)); pintarLista(); });
+  pintarLista();
+}
+
+async function formObra(id, t) {
+  const nueva = id === 'nueva';
+  const o = nueva ? { estado: 'En curso' } : await q(sb.from('obras').select('*').eq('id', id).single());
+  if (!vigente(t)) return;
+  cabecera({ titulo: nueva ? 'Nueva obra' : 'Editar obra', sub: nueva ? '' : `Nº ${o.numero} · ${o.nombre}`, volver: '#obras' });
+  $('#vista').innerHTML = `<form class="form" id="f-obra" novalidate>
+    <div class="campo"><label for="o-num">Número de obra</label><input id="o-num" type="text" value="${esc(o.numero)}" placeholder="Código interno" required></div>
+    <div class="campo"><label for="o-nom">Nombre</label><input id="o-nom" type="text" value="${esc(o.nombre)}" required></div>
+    <div class="dos-col">
+      <div class="campo"><label for="o-ini">Inicio previsto</label><input id="o-ini" type="date" value="${o.fecha_inicio || ''}"></div>
+      <div class="campo"><label for="o-fin">Fin previsto</label><input id="o-fin" type="date" value="${o.fecha_fin || ''}"></div>
+    </div>
+    <div class="campo"><label for="o-est">Estado</label><select id="o-est">${ESTADOS.map(e => `<option ${e === o.estado ? 'selected' : ''}>${e}</option>`).join('')}</select></div>
+    <div class="campo"><label for="o-pre">Presupuesto (€) <span class="opcional">(opcional)</span></label><input id="o-pre" type="text" inputmode="decimal" placeholder="0,00" value="${fImporteCampo(o.presupuesto)}" style="text-align:right"></div>
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="o-guardar">Guardar obra</button>
+      <a class="btn btn-secundario btn-bloque" href="#obras">Cancelar</a>
+      ${nueva ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="o-borrar">Borrar obra</button>'}
+    </div>
+  </form>`;
+  $('#f-obra').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const datos = { numero: val('o-num'), nombre: val('o-nom'), fecha_inicio: val('o-ini') || null, fecha_fin: val('o-fin') || null, estado: val('o-est'), presupuesto: parseImporte(val('o-pre')) };
+    if (!datos.numero) return marcarError('o-num', 'Falta el número de obra.');
+    if (!datos.nombre) return marcarError('o-nom', 'Falta el nombre de la obra.');
+    if (datos.fecha_inicio && datos.fecha_fin && datos.fecha_fin < datos.fecha_inicio) return marcarError('o-fin', 'El fin previsto no puede ser anterior al inicio.');
+    if (Number.isNaN(datos.presupuesto)) return marcarError('o-pre', 'El presupuesto no es un número válido. Ejemplo: 125.000,50');
+    guardando($('#o-guardar'), async () => {
+      if (nueva) await q(sb.from('obras').insert(datos)); else await q(sb.from('obras').update(datos).eq('id', id));
+      aviso('Obra guardada'); irA('#obras');
+    });
+  };
+  const b = $('#o-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar(`¿Borrar la obra "${o.nombre}"? También se borrarán todos sus partes diarios. No se puede deshacer.`)) return;
+    try { await q(sb.from('obras').delete().eq('id', id)); aviso('Obra borrada'); irA('#obras'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+  if (nueva) $('#o-num').focus();
+}
+
+/* =================== PARTES DIARIOS =================== */
+const fPartes = { obra: '', desde: '', hasta: '', inc: false };
+async function vistaPartes(_, t) {
+  const [partes, obras] = await Promise.all([
+    q(sb.from('partes').select('id,fecha,trabajos,hay_incidencia,incidencia_tipo,incidencia_descripcion,obra_id,obras(nombre,numero),parte_personal(count),parte_maquinaria(count)').order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(1000)),
+    q(sb.from('obras').select('id,numero,nombre,estado').order('numero'))
+  ]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: 'Partes diarios', sub: 'Trabajos, personal, maquinaria e incidencias de cada día', acciones: botonCab('#parte/nuevo', 'Nuevo parte diario', 'Nuevo') });
+  $('#vista').innerHTML = `
+    <div class="filtros">
+      <div class="campo"><label for="p-f-obra">Obra</label><select id="p-f-obra">${opcionesObra(obras, fPartes.obra, 'Todas las obras')}</select></div>
+      <div class="campo" style="flex:0 1 170px"><label for="p-f-desde">Desde</label><input id="p-f-desde" type="date" value="${fPartes.desde}"></div>
+      <div class="campo" style="flex:0 1 170px"><label for="p-f-hasta">Hasta</label><input id="p-f-hasta" type="date" value="${fPartes.hasta}"></div>
+      <label class="casilla-linea"><input type="checkbox" id="p-f-inc" ${fPartes.inc ? 'checked' : ''} style="accent-color:var(--rojo)"> Solo con incidencias</label>
+    </div>
+    <div id="lista-partes"></div>`;
+  const nP = p => p.parte_personal?.[0]?.count ?? 0, nM = p => p.parte_maquinaria?.[0]?.count ?? 0;
+  const etiquetaInc = p => p.hay_incidencia ? `<span class="pastilla p-rojo">${esc(p.incidencia_tipo || 'Incidencia')}</span>` : '<span class="pastilla p-verde">Sin incidencias</span>';
+  const pintarLista = () => {
+    const l = partes.filter(p => (!fPartes.obra || p.obra_id === fPartes.obra) && (!fPartes.desde || p.fecha >= fPartes.desde) && (!fPartes.hasta || p.fecha <= fPartes.hasta) && (!fPartes.inc || p.hay_incidencia));
+    const c = $('#lista-partes');
+    if (!partes.length) { c.innerHTML = `<div class="tarjeta"><div class="vacio-caja"><p class="vacio">Aún no hay partes diarios.</p><a class="enlace-accion" href="#parte/nuevo">Crear el primero</a></div></div>`; return; }
+    if (!l.length) { c.innerHTML = '<p class="vacio">Ningún parte coincide con los filtros.</p>'; return; }
+    c.innerHTML = `
+      <div class="lista-fichas solo-movil">${l.map(p => `<a class="ficha" href="#parte/${p.id}">
+        <div class="ficha-cab"><div class="pila"><span class="sup num">${fFecha(p.fecha)}</span><h3>${esc(p.obras?.nombre || '—')}</h3></div>${etiquetaInc(p)}</div>
+        ${p.trabajos ? `<p style="margin:0;color:var(--texto-2)">${esc(p.trabajos.length > 160 ? p.trabajos.slice(0, 160) + '…' : p.trabajos)}</p>` : ''}
+        ${p.hay_incidencia && p.incidencia_descripcion ? `<div class="incidencia-caja"><strong>${esc(p.incidencia_tipo || 'Incidencia')}:</strong> ${esc(p.incidencia_descripcion)}</div>` : ''}
+        <div class="ficha-pie" style="justify-content:flex-start;gap:18px"><span>Personal: <b class="num">${nP(p)}</b></span><span>Maquinaria: <b class="num">${nM(p)}</b></span></div></a>`).join('')}</div>
+      <div class="tabla-caja solo-pc"><table><thead><tr><th>Fecha</th><th>Obra</th><th>Trabajos realizados</th><th class="centro">Personal</th><th class="centro">Maquinaria</th><th>Incidencias</th></tr></thead><tbody>
+        ${l.map(p => `<tr data-ir="#parte/${p.id}"><td class="num" style="white-space:nowrap">${fFecha(p.fecha)}</td><td><a href="#parte/${p.id}">${esc(p.obras?.nombre || '—')}</a></td><td><div class="recorte">${esc(p.trabajos || '')}</div></td><td class="centro num">${nP(p)}</td><td class="centro num">${nM(p)}</td><td>${etiquetaInc(p)}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="contador">${l.length} parte${l.length !== 1 ? 's' : ''}</p>`;
+    $$('[data-ir]', c).forEach(r => r.onclick = e => { if (!e.target.closest('a')) location.hash = r.dataset.ir; });
+  };
+  $('#p-f-obra').onchange = e => { fPartes.obra = e.target.value; pintarLista(); };
+  $('#p-f-desde').onchange = e => { fPartes.desde = e.target.value; pintarLista(); };
+  $('#p-f-hasta').onchange = e => { fPartes.hasta = e.target.value; pintarLista(); };
+  $('#p-f-inc').onchange = e => { fPartes.inc = e.target.checked; pintarLista(); };
+  pintarLista();
+}
+
+async function formParte(id, t) {
+  const nuevo = id === 'nuevo';
+  const [obras, personal, maquinaria, parte] = await Promise.all([
+    q(sb.from('obras').select('id,numero,nombre,estado').order('numero')),
+    q(sb.from('personal').select('id,nombre,apellidos,dni,categoria,empresa').order('apellidos').order('nombre')),
+    q(sb.from('maquinaria').select('id,nombre,tipo,empresa').order('nombre')),
+    nuevo ? null : q(sb.from('partes').select('*,parte_personal(personal_id),parte_maquinaria(maquina_id)').eq('id', id).single())
+  ]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: nuevo ? 'Nuevo parte diario' : 'Parte diario', sub: nuevo ? '' : `${fFecha(parte.fecha)}`, volver: '#partes',
+    acciones: nuevo ? '' : `<button type="button" class="btn-pdf" id="pa-pdf">${ic('pdf', 18)}PDF</button>` });
+  if (!nuevo) $('#pa-pdf').onclick = e => botonPDF(e.currentTarget, () => pdfParte(id));
+  if (!obras.length) {
+    $('#vista').innerHTML = `<div class="tarjeta"><h2>Primero crea una obra</h2><p class="vacio">Cada parte diario pertenece a una obra.</p><div><a class="btn btn-principal" href="#obra/nueva">Crear obra</a></div></div>`;
+    return;
+  }
+  const p = parte || { fecha: hoyISO(), hay_incidencia: false, obra_id: (obras.filter(o => o.estado === 'En curso').length === 1 ? obras.find(o => o.estado === 'En curso').id : '') };
+  const selP = new Set((parte?.parte_personal || []).map(x => x.personal_id));
+  const selM = new Set((parte?.parte_maquinaria || []).map(x => x.maquina_id));
+  const obrasSel = obras.filter(o => o.estado !== 'Terminada' || o.id === p.obra_id);
+  let hay = !!p.hay_incidencia;
+  $('#vista').innerHTML = `<form class="form" id="f-parte" novalidate>
+    <div class="dos-col" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+      <div class="campo"><label for="pa-obra">Obra</label><select id="pa-obra">${opcionesObra(obrasSel, p.obra_id, 'Elegir obra…')}</select></div>
+      <div class="campo"><label for="pa-fecha">Fecha</label><input id="pa-fecha" type="date" value="${p.fecha}"></div>
+    </div>
+    <div class="bloque"><label for="pa-trab" style="font-size:16px;font-weight:700;color:var(--azul)">Trabajos realizados</label>
+      <textarea id="pa-trab" data-dictado rows="5" placeholder="Describe los trabajos que se están realizando">${esc(p.trabajos)}</textarea></div>
+    <fieldset class="bloque"><legend><span class="bloque-cab"><span>Personal</span><span class="contador" id="cnt-p"></span></span></legend>
+      ${personal.length ? listaFiltrable('pers', personal, selP, x => nombreCompleto(x), x => [x.categoria, x.empresa, x.dni ? 'DNI ' + x.dni : ''].filter(Boolean).join(' · '), x => `${nombreCompleto(x)} ${x.dni || ''} ${x.categoria || ''}`, 'Nombre o DNI', 'trabajadores')
+        : '<p class="vacio">No hay personal dado de alta. <a href="#persona/nueva">Añadir personal</a></p>'}
+    </fieldset>
+    <fieldset class="bloque"><legend><span class="bloque-cab"><span>Maquinaria</span><span class="contador" id="cnt-m"></span></span></legend>
+      ${maquinaria.length ? listaFiltrable('maq', maquinaria, selM, x => x.nombre, x => [x.tipo, x.empresa].filter(Boolean).join(' · '), x => `${x.nombre} ${x.tipo || ''}`, 'Nombre o tipo', 'máquinas')
+        : '<p class="vacio">No hay maquinaria dada de alta. <a href="#maquina/nueva">Añadir máquina</a></p>'}
+    </fieldset>
+    <div class="bloque" style="gap:12px"><span style="font-size:16px;font-weight:700;color:var(--azul)" id="inc-t">Incidencias</span>
+      <div class="dos-botones" role="group" aria-labelledby="inc-t">
+        <button type="button" class="conmuta no-on" id="inc-no">Sin incidencias</button>
+        <button type="button" class="conmuta si-on" id="inc-si">Hay incidencia</button>
+      </div>
+      <div class="incidencia-detalle" id="inc-det">
+        <fieldset class="tipos" id="pa-tipo"><legend class="etq" style="font-size:14px;font-weight:600;color:var(--rojo-oscuro);margin-bottom:6px;float:left;width:100%">Tipo</legend>
+          ${['Rotura', 'Accidente', 'Otra'].map((x, i) => `<input type="radio" name="tipo" id="tipo-${i}" value="${x}" ${p.incidencia_tipo === x ? 'checked' : ''}><label for="tipo-${i}">${x}</label>`).join('')}
+        </fieldset>
+        <div class="campo"><label for="pa-inc">Qué ha pasado</label><textarea id="pa-inc" data-dictado rows="3" placeholder="Describe la incidencia y las medidas tomadas">${esc(p.incidencia_descripcion)}</textarea></div>
+      </div>
+    </div>
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="pa-guardar">Guardar parte</button>
+      <a class="btn btn-secundario btn-bloque" href="#partes">Cancelar</a>
+      ${nuevo ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="pa-borrar">Borrar parte</button>'}
+    </div>
+  </form>`;
+  const pintarInc = () => { $('#inc-no').setAttribute('aria-pressed', !hay); $('#inc-si').setAttribute('aria-pressed', hay); $('#inc-det').hidden = !hay; };
+  $('#inc-no').onclick = () => { hay = false; pintarInc(); };
+  $('#inc-si').onclick = () => { hay = true; pintarInc(); };
+  pintarInc();
+  const contar = () => {
+    const a = $$('input[name=pers]:checked').length, b = $$('input[name=maq]:checked').length;
+    if ($('#cnt-p')) $('#cnt-p').textContent = personal.length ? `${a} de ${personal.length}` : '';
+    if ($('#cnt-m')) $('#cnt-m').textContent = maquinaria.length ? `${b} de ${maquinaria.length}` : '';
+  };
+  $$('input[name=pers], input[name=maq]').forEach(c => c.onchange = contar); contar();
+  ['pers', 'maq'].forEach(tipo => {
+    const caja = $(`[data-filtrable="${tipo}"]`); if (!caja) return;
+    const selEmp = $(`#${tipo}-f-emp`), txt = $(`#${tipo}-f-txt`), soloMarc = $(`#${tipo}-f-marc`), aviso0 = $(`#${tipo}-f-vacio`);
+    const aplicar = () => {
+      const emp = selEmp.value, t = normaliza(txt.value.trim()), solo = soloMarc.checked;
+      let visibles = 0;
+      $$('label[data-emp]', caja).forEach(l => {
+        const marcado = $('input', l).checked;
+        const pasa = solo ? marcado : (marcado || ((!emp || l.dataset.emp === emp) && (!t || l.dataset.txt.includes(t))));
+        l.hidden = !pasa; if (pasa) visibles++;
+      });
+      aviso0.hidden = visibles > 0;
+    };
+    selEmp.onchange = () => { soloMarc.checked = false; aplicar(); }; txt.oninput = () => { soloMarc.checked = false; aplicar(); }; soloMarc.onchange = aplicar;
+    if (!nuevo && $$('input:checked', caja).length) { soloMarc.checked = true; }
+    aplicar();
+  });
+  $('#f-parte').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const tipo = $('input[name=tipo]:checked')?.value || null;
+    const datos = { obra_id: val('pa-obra'), fecha: val('pa-fecha'), trabajos: val('pa-trab') || null, hay_incidencia: hay,
+      incidencia_tipo: hay ? tipo : null, incidencia_descripcion: hay ? (val('pa-inc') || null) : null };
+    if (!datos.obra_id) return marcarError('pa-obra', 'Elige la obra.');
+    if (!datos.fecha) return marcarError('pa-fecha', 'Falta la fecha.');
+    if (hay && !tipo) return marcarError('pa-tipo', 'Elige el tipo de incidencia.');
+    if (hay && !datos.incidencia_descripcion) return marcarError('pa-inc', 'Explica qué ha pasado.');
+    const pers = $$('input[name=pers]:checked').map(c => c.value), maq = $$('input[name=maq]:checked').map(c => c.value);
+    guardando($('#pa-guardar'), async () => {
+      let pid = id;
+      if (nuevo) pid = (await q(sb.from('partes').insert(datos).select('id').single())).id;
+      else await q(sb.from('partes').update(datos).eq('id', id));
+      await q(sb.from('parte_personal').delete().eq('parte_id', pid));
+      await q(sb.from('parte_maquinaria').delete().eq('parte_id', pid));
+      if (pers.length) await q(sb.from('parte_personal').insert(pers.map(x => ({ parte_id: pid, personal_id: x }))));
+      if (maq.length) await q(sb.from('parte_maquinaria').insert(maq.map(x => ({ parte_id: pid, maquina_id: x }))));
+      aviso('Parte guardado'); irA('#partes');
+    });
+  };
+  const b = $('#pa-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar(`¿Borrar el parte del ${fFecha(parte.fecha)}? No se puede deshacer.`)) return;
+    try { await q(sb.from('partes').delete().eq('id', id)); aviso('Parte borrado'); irA('#partes'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+}
+
+/* =================== TAREAS =================== */
+const vT = { vista: 'lista', anio: null, mes: null, dia: null, hechas: false };
+async function vistaTareas(_, t) {
+  const tareas = await q(sb.from('tareas').select('id,texto,fecha,hecha,obra_id,obras(nombre)').order('fecha').order('created_at'));
+  if (!vigente(t)) return;
+  const hoy = hoyISO();
+  if (vT.anio == null) { const d = new Date(); vT.anio = d.getFullYear(); vT.mes = d.getMonth(); vT.dia = hoy; }
+  cabecera({ titulo: 'Tareas pendientes', sub: 'Llamadas, entregas y gestiones, organizadas por día', acciones: botonCab('#tarea/nueva', 'Nueva tarea', 'Nueva') });
+  const pend = tareas.filter(x => !x.hecha);
+  const porDia = {};
+  tareas.forEach(x => { (porDia[x.fecha] = porDia[x.fecha] || []).push(x); });
+
+  const pintarTodo = () => {
+    const atr = pend.filter(x => x.fecha < hoy), deHoy = pend.filter(x => x.fecha === hoy), prox = pend.filter(x => x.fecha > hoy);
+    const hechas = tareas.filter(x => x.hecha).sort((a, b) => b.fecha.localeCompare(a.fecha)).slice(0, 30);
+    const grupo = (titulo, l, rojo) => l.length ? `<div class="grupo-tareas"><h3 class="${rojo ? 'rojo' : ''}">${titulo}</h3>${l.map(x => itemTarea(x, hoy)).join('')}</div>` : '';
+    // Calendario
+    const primero = new Date(vT.anio, vT.mes, 1);
+    const desfase = (primero.getDay() + 6) % 7, total = new Date(vT.anio, vT.mes + 1, 0).getDate();
+    let celdas = '';
+    for (let i = 0; i < desfase; i++) celdas += '<span class="cal-dia otro" aria-hidden="true"></span>';
+    for (let n = 1; n <= total; n++) {
+      const iso = `${vT.anio}-${pad(vT.mes + 1)}-${pad(n)}`;
+      const lista = (porDia[iso] || []).filter(x => !x.hecha);
+      const tarde = lista.length && iso < hoy;
+      const cls = ['cal-dia', iso === hoy ? 'es-hoy' : '', iso === vT.dia ? 'sel' : ''].join(' ');
+      const minis = lista.slice(0, 2).map(x => `<span class="mini${tarde ? ' tarde' : ''}">${esc(x.texto)}</span>`).join('') + (lista.length > 2 ? `<span class="mini mas">+${lista.length - 2} más</span>` : '');
+      celdas += `<button type="button" class="${cls}" data-dia="${iso}" aria-pressed="${iso === vT.dia}" aria-label="${esc(fLarga(iso))}${lista.length ? `, ${lista.length} tarea${lista.length > 1 ? 's' : ''} pendiente${lista.length > 1 ? 's' : ''}` : ''}"><span class="n">${n}</span><span class="punto${lista.length ? (tarde ? ' on tarde' : ' on') : ''}"></span>${minis}</button>`;
+    }
+    const delDia = porDia[vT.dia] || [];
+    const nombreMes = mayus(primero.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }));
+    $('#vista').innerHTML = `
+      <div class="segmento solo-movil" role="group" aria-label="Vista">
+        <button type="button" data-vista="lista" aria-pressed="${vT.vista === 'lista'}">Lista</button>
+        <button type="button" data-vista="cal" aria-pressed="${vT.vista === 'cal'}">Calendario</button>
+      </div>
+      <div class="tareas-layout ver-${vT.vista}">
+        <div class="panel-cal">
+          <section class="tarjeta">
+            <div class="cal-cab"><h2>${esc(nombreMes)}</h2>
+              <div class="cal-nav"><button type="button" class="icono-btn" data-mes="-1" aria-label="Mes anterior">${ic('atras', 18)}</button><button type="button" class="icono-btn hoy" data-mes="0">Hoy</button><button type="button" class="icono-btn" data-mes="1" aria-label="Mes siguiente">${ic('sig', 18)}</button></div>
+            </div>
+            <div class="cal-semana" aria-hidden="true">${['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d, i) => `<span><span class="solo-movil">${d}</span><span class="solo-pc">${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][i]}</span></span>`).join('')}</div>
+            <div class="cal-rejilla">${celdas}</div>
+          </section>
+          <section class="tarjeta" id="t-dia">
+            <h2>${esc(fLarga(vT.dia))}</h2>
+            ${delDia.length ? `<div>${delDia.map(x => itemTarea(x, hoy, false)).join('')}</div>` : '<p class="vacio">Sin tareas este día.</p>'}
+            <a class="enlace-accion" href="#tarea/nueva/${vT.dia}">+ Añadir tarea este día</a>
+          </section>
+        </div>
+        <div class="panel-lista">
+          <section class="tarjeta" id="t-lista">
+            <h2 class="solo-pc">Todas las pendientes</h2>
+            ${pend.length ? grupo('ATRASADAS', atr, true) + grupo('HOY', deHoy) + grupo('PRÓXIMOS DÍAS', prox)
+              : '<div class="vacio-caja"><p class="vacio">No tienes tareas pendientes.</p><a class="enlace-accion" href="#tarea/nueva">+ Añadir tarea</a></div>'}
+          </section>
+          <section class="tarjeta" id="t-hechas">
+            <label class="casilla-linea"><input type="checkbox" id="ver-hechas" ${vT.hechas ? 'checked' : ''}> Ver tareas hechas</label>
+            ${vT.hechas ? (hechas.length ? `<div>${hechas.map(x => itemTarea(x, hoy)).join('')}</div>` : '<p class="vacio">Todavía no has marcado ninguna como hecha.</p>') : ''}
+          </section>
+        </div>
+      </div>`;
+    $$('[data-vista]').forEach(b => b.onclick = () => { vT.vista = b.dataset.vista; pintarTodo(); });
+    $$('[data-mes]').forEach(b => b.onclick = () => {
+      const d = Number(b.dataset.mes);
+      if (d === 0) { const h = new Date(); vT.anio = h.getFullYear(); vT.mes = h.getMonth(); vT.dia = hoy; }
+      else { const n = new Date(vT.anio, vT.mes + d, 1); vT.anio = n.getFullYear(); vT.mes = n.getMonth(); vT.dia = isoDe(n); }
+      pintarTodo();
+    });
+    $$('[data-dia]').forEach(b => b.onclick = () => { vT.dia = b.dataset.dia; pintarTodo(); $(`[data-dia="${vT.dia}"]`)?.focus(); });
+    $('#ver-hechas').onchange = e => { vT.hechas = e.target.checked; pintarTodo(); };
+    enlazarCasillasTareas($('#vista'), pintar);
+  };
+  pintarTodo();
+}
+
+async function formTarea(param, t) {
+  const [modo, fechaIni] = param.split('/');
+  const nueva = modo === 'nueva';
+  const [obras, tarea] = await Promise.all([
+    q(sb.from('obras').select('id,numero,nombre,estado').order('numero')),
+    nueva ? null : q(sb.from('tareas').select('*').eq('id', modo).single())
+  ]);
+  if (!vigente(t)) return;
+  const x = tarea || { fecha: /^\d{4}-\d{2}-\d{2}$/.test(fechaIni || '') ? fechaIni : hoyISO(), hecha: false, obra_id: null };
+  cabecera({ titulo: nueva ? 'Nueva tarea' : 'Editar tarea', volver: '#tareas' });
+  const obrasSel = obras.filter(o => o.estado !== 'Terminada' || o.id === x.obra_id);
+  $('#vista').innerHTML = `<form class="form" id="f-tarea" novalidate>
+    <div class="campo"><label for="t-txt">Qué hay que hacer</label><textarea id="t-txt" data-dictado rows="3" placeholder="Ej.: llamar a…, presentar…">${esc(x.texto)}</textarea></div>
+    <div class="campo"><label for="t-fecha">Fecha</label><input id="t-fecha" type="date" value="${x.fecha}"></div>
+    <div class="campo"><label for="t-obra">Obra <span class="opcional">(opcional)</span></label><select id="t-obra">${opcionesObra(obrasSel, x.obra_id, 'Sin obra')}</select></div>
+    ${nueva ? '' : `<label class="casilla-linea"><input type="checkbox" id="t-hecha" ${x.hecha ? 'checked' : ''} style="accent-color:var(--verde)"> Hecha</label>`}
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="t-guardar">Guardar tarea</button>
+      <a class="btn btn-secundario btn-bloque" href="#tareas">Cancelar</a>
+      ${nueva ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="t-borrar">Borrar tarea</button>'}
+    </div>
+  </form>`;
+  $('#f-tarea').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const datos = { texto: val('t-txt'), fecha: val('t-fecha'), obra_id: val('t-obra') || null };
+    if (!nueva) datos.hecha = $('#t-hecha').checked;
+    if (!datos.texto) return marcarError('t-txt', 'Escribe qué hay que hacer.');
+    if (!datos.fecha) return marcarError('t-fecha', 'Falta la fecha.');
+    guardando($('#t-guardar'), async () => {
+      if (nueva) await q(sb.from('tareas').insert(datos)); else await q(sb.from('tareas').update(datos).eq('id', modo));
+      const [y, m] = datos.fecha.split('-').map(Number); vT.anio = y; vT.mes = m - 1; vT.dia = datos.fecha;
+      aviso('Tarea guardada'); irA('#tareas');
+    });
+  };
+  const b = $('#t-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar('¿Borrar esta tarea?')) return;
+    try { await q(sb.from('tareas').delete().eq('id', modo)); aviso('Tarea borrada'); irA('#tareas'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+  if (nueva) $('#t-txt').focus();
+}
+
+/* =================== PERSONAL =================== */
+const fPers = { texto: '', empresa: '' };
+async function vistaPersonal(_, t) {
+  const gente = await q(sb.from('personal').select('*').order('apellidos').order('nombre'));
+  if (!vigente(t)) return;
+  const empresas = [...new Set(gente.map(p => p.empresa).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  cabecera({ titulo: 'Personal', sub: 'Personas que pueden aparecer en los partes diarios', volver: '', acciones: botonCab('#persona/nueva', 'Añadir persona', 'Añadir') });
+  $('#vista').innerHTML = `
+    <div class="filtros">
+      <div class="campo"><label for="b-pers">Buscar</label><input id="b-pers" type="search" placeholder="Nombre, DNI o empresa" value="${esc(fPers.texto)}"></div>
+      <div class="campo" style="flex:0 1 260px"><label for="f-emp">Empresa</label><select id="f-emp"><option value="">Todas las empresas</option>${empresas.map(e => `<option ${e === fPers.empresa ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></div>
+    </div>
+    <div id="lista-pers"></div>`;
+  const pintarLista = () => {
+    const txt = fPers.texto.toLowerCase();
+    const l = gente.filter(p => (!fPers.empresa || p.empresa === fPers.empresa) && (!txt || `${nombreCompleto(p)} ${p.dni || ''} ${p.empresa || ''}`.toLowerCase().includes(txt)));
+    const c = $('#lista-pers');
+    if (!gente.length) { c.innerHTML = `<div class="tarjeta"><div class="vacio-caja"><p class="vacio">Todavía no hay personal registrado.</p><a class="enlace-accion" href="#persona/nueva">Añadir la primera persona</a></div></div>`; return; }
+    if (!l.length) { c.innerHTML = '<p class="vacio">Nadie coincide con la búsqueda.</p>'; return; }
+    c.innerHTML = `
+      <div class="lista-fichas solo-movil">${l.map(p => `<a class="ficha ficha-icono" href="#persona/${p.id}"><span class="ic">${ic('persona')}</span>
+        <span class="pila"><h3 style="font-size:16px">${esc(nombreCompleto(p))}</h3><span style="font-size:14px;color:var(--texto-2)">${esc([p.categoria, p.empresa].filter(Boolean).join(' · ') || '—')}</span>${p.dni ? `<span style="font-size:13px;color:var(--gris)">DNI ${esc(p.dni)}</span>` : ''}</span></a>`).join('')}</div>
+      <div class="tabla-caja solo-pc"><table><thead><tr><th>Nombre y apellidos</th><th>DNI / NIE</th><th>Categoría</th><th>Empresa</th></tr></thead><tbody>
+        ${l.map(p => `<tr data-ir="#persona/${p.id}"><td><a href="#persona/${p.id}">${esc(nombreCompleto(p))}</a></td><td class="num">${esc(p.dni || '—')}</td><td>${esc(p.categoria || '—')}</td><td>${esc(p.empresa || '—')}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="contador">${l.length} persona${l.length !== 1 ? 's' : ''}</p>`;
+    $$('[data-ir]', c).forEach(r => r.onclick = e => { if (!e.target.closest('a')) location.hash = r.dataset.ir; });
+  };
+  $('#b-pers').oninput = e => { fPers.texto = e.target.value; pintarLista(); };
+  $('#f-emp').onchange = e => { fPers.empresa = e.target.value; pintarLista(); };
+  pintarLista();
+}
+
+async function formPersona(id, t) {
+  const nueva = id === 'nueva';
+  const [p, empresas] = await Promise.all([nueva ? {} : q(sb.from('personal').select('*').eq('id', id).single()), empresasConocidas()]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: nueva ? 'Añadir persona' : 'Editar persona', sub: nueva ? '' : nombreCompleto(p), volver: '#personal' });
+  $('#vista').innerHTML = `<form class="form" id="f-pers" novalidate>
+    <div class="dos-col">
+      <div class="campo"><label for="pe-nom">Nombre</label><input id="pe-nom" type="text" autocomplete="off" value="${esc(p.nombre)}"></div>
+      <div class="campo"><label for="pe-ape">Apellidos</label><input id="pe-ape" type="text" autocomplete="off" value="${esc(p.apellidos)}"></div>
+    </div>
+    <div class="campo"><label for="pe-dni">DNI / NIE</label><input id="pe-dni" type="text" autocomplete="off" placeholder="12345678Z" value="${esc(p.dni)}" style="text-transform:uppercase"><small>Se comprueba que la letra sea correcta.</small></div>
+    <div class="campo"><label for="pe-cat">Categoría</label><select id="pe-cat">${CATEGORIAS.map(c => `<option ${c === (p.categoria || 'Peón') ? 'selected' : ''}>${c}</option>`).join('')}${p.categoria && !CATEGORIAS.includes(p.categoria) ? `<option selected>${esc(p.categoria)}</option>` : ''}</select></div>
+    <div class="campo"><label for="pe-emp">Empresa</label><input id="pe-emp" type="text" list="lista-empresas" autocomplete="off" placeholder="Empresa propia o subcontrata" value="${esc(p.empresa)}"><datalist id="lista-empresas">${empresas.map(e => `<option value="${esc(e)}">`).join('')}</datalist></div>
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="pe-guardar">Guardar</button>
+      <a class="btn btn-secundario btn-bloque" href="#personal">Cancelar</a>
+      ${nueva ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="pe-borrar">Borrar persona</button>'}
+    </div>
+  </form>`;
+  $('#f-pers').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const dni = val('pe-dni').toUpperCase().replace(/[\s-]/g, '');
+    const datos = { nombre: val('pe-nom'), apellidos: val('pe-ape'), dni: dni || null, categoria: val('pe-cat'), empresa: val('pe-emp') || null };
+    if (!datos.nombre) return marcarError('pe-nom', 'Falta el nombre.');
+    if (dni && !dniValido(dni)) return marcarError('pe-dni', 'El DNI o NIE no es correcto. Revisa los números y la letra.');
+    guardando($('#pe-guardar'), async () => {
+      if (nueva) await q(sb.from('personal').insert(datos)); else await q(sb.from('personal').update(datos).eq('id', id));
+      aviso('Persona guardada'); irA('#personal');
+    });
+  };
+  const b = $('#pe-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar(`¿Borrar a ${nombreCompleto(p)}? Dejará de aparecer también en los partes donde estaba marcada.`)) return;
+    try { await q(sb.from('personal').delete().eq('id', id)); aviso('Persona borrada'); irA('#personal'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+  if (nueva) $('#pe-nom').focus();
+}
+
+/* =================== MAQUINARIA =================== */
+const fMaq = { texto: '', tipo: '' };
+async function vistaMaquinaria(_, t) {
+  const maqs = await q(sb.from('maquinaria').select('*').order('nombre'));
+  if (!vigente(t)) return;
+  const tipos = [...new Set(maqs.map(m => m.tipo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
+  cabecera({ titulo: 'Maquinaria', sub: 'Máquinas que pueden aparecer en los partes diarios', acciones: botonCab('#maquina/nueva', 'Añadir máquina', 'Añadir') });
+  $('#vista').innerHTML = `
+    <div class="filtros">
+      <div class="campo"><label for="b-maq">Buscar</label><input id="b-maq" type="search" placeholder="Nombre, tipo o empresa" value="${esc(fMaq.texto)}"></div>
+      <div class="campo" style="flex:0 1 260px"><label for="f-tipo">Tipo</label><select id="f-tipo"><option value="">Todos los tipos</option>${tipos.map(e => `<option ${e === fMaq.tipo ? 'selected' : ''}>${esc(e)}</option>`).join('')}</select></div>
+    </div>
+    <div id="lista-maq"></div>`;
+  const pintarLista = () => {
+    const txt = fMaq.texto.toLowerCase();
+    const l = maqs.filter(m => (!fMaq.tipo || m.tipo === fMaq.tipo) && (!txt || `${m.nombre} ${m.tipo || ''} ${m.empresa || ''}`.toLowerCase().includes(txt)));
+    const c = $('#lista-maq');
+    if (!maqs.length) { c.innerHTML = `<div class="tarjeta"><div class="vacio-caja"><p class="vacio">Todavía no hay maquinaria registrada.</p><a class="enlace-accion" href="#maquina/nueva">Añadir la primera máquina</a></div></div>`; return; }
+    if (!l.length) { c.innerHTML = '<p class="vacio">Ninguna máquina coincide con la búsqueda.</p>'; return; }
+    c.innerHTML = `
+      <div class="lista-fichas solo-movil">${l.map(m => `<a class="ficha ficha-icono" href="#maquina/${m.id}"><span class="ic cuadrado">${ic('maquinaria')}</span>
+        <span class="pila"><h3 style="font-size:16px">${esc(m.nombre)}</h3><span style="font-size:14px;color:var(--texto-2)">${esc(m.tipo || '—')}</span>${m.empresa ? `<span style="font-size:13px;color:var(--gris)">${esc(m.empresa)}</span>` : ''}</span></a>`).join('')}</div>
+      <div class="tabla-caja solo-pc"><table><thead><tr><th>Nombre</th><th>Tipo de máquina</th><th>Empresa</th></tr></thead><tbody>
+        ${l.map(m => `<tr data-ir="#maquina/${m.id}"><td><a href="#maquina/${m.id}">${esc(m.nombre)}</a></td><td>${esc(m.tipo || '—')}</td><td>${esc(m.empresa || '—')}</td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="contador">${l.length} máquina${l.length !== 1 ? 's' : ''}</p>`;
+    $$('[data-ir]', c).forEach(r => r.onclick = e => { if (!e.target.closest('a')) location.hash = r.dataset.ir; });
+  };
+  $('#b-maq').oninput = e => { fMaq.texto = e.target.value; pintarLista(); };
+  $('#f-tipo').onchange = e => { fMaq.tipo = e.target.value; pintarLista(); };
+  pintarLista();
+}
+
+async function formMaquina(id, t) {
+  const nueva = id === 'nueva';
+  const [m, empresas] = await Promise.all([nueva ? {} : q(sb.from('maquinaria').select('*').eq('id', id).single()), empresasConocidas()]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: nueva ? 'Añadir máquina' : 'Editar máquina', sub: nueva ? '' : m.nombre, volver: '#maquinaria' });
+  $('#vista').innerHTML = `<form class="form" id="f-maq" novalidate>
+    <div class="campo"><label for="m-nom">Nombre</label><input id="m-nom" type="text" autocomplete="off" placeholder="Cómo la identificas en obra" value="${esc(m.nombre)}"></div>
+    <div class="campo"><label for="m-tipo">Tipo de máquina</label><select id="m-tipo">${TIPOS_MAQUINA.map(c => `<option ${c === (m.tipo || 'Retroexcavadora') ? 'selected' : ''}>${c}</option>`).join('')}${m.tipo && !TIPOS_MAQUINA.includes(m.tipo) ? `<option selected>${esc(m.tipo)}</option>` : ''}</select></div>
+    <div class="campo"><label for="m-emp">Empresa a la que pertenece</label><input id="m-emp" type="text" list="lista-empresas" autocomplete="off" placeholder="Empresa propia o de alquiler" value="${esc(m.empresa)}"><datalist id="lista-empresas">${empresas.map(e => `<option value="${esc(e)}">`).join('')}</datalist></div>
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="m-guardar">Guardar</button>
+      <a class="btn btn-secundario btn-bloque" href="#maquinaria">Cancelar</a>
+      ${nueva ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="m-borrar">Borrar máquina</button>'}
+    </div>
+  </form>`;
+  $('#f-maq').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const datos = { nombre: val('m-nom'), tipo: val('m-tipo'), empresa: val('m-emp') || null };
+    if (!datos.nombre) return marcarError('m-nom', 'Falta el nombre de la máquina.');
+    guardando($('#m-guardar'), async () => {
+      if (nueva) await q(sb.from('maquinaria').insert(datos)); else await q(sb.from('maquinaria').update(datos).eq('id', id));
+      aviso('Máquina guardada'); irA('#maquinaria');
+    });
+  };
+  const b = $('#m-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar(`¿Borrar "${m.nombre}"? Dejará de aparecer también en los partes donde estaba marcada.`)) return;
+    try { await q(sb.from('maquinaria').delete().eq('id', id)); aviso('Máquina borrada'); irA('#maquinaria'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+  if (nueva) $('#m-nom').focus();
+}
+
+/* =================== VISITAS =================== */
+const fVis = { obra: '', texto: '', desde: '', hasta: '' };
+async function vistaVisitas(_, t) {
+  const [visitas, obras] = await Promise.all([
+    q(sb.from('visitas').select('id,fecha,notas,obra_id,obras(numero,nombre)').order('fecha', { ascending: false }).order('created_at', { ascending: false }).limit(1000)),
+    q(sb.from('obras').select('id,numero,nombre,estado').order('numero'))
+  ]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: 'Anotaciones', sub: 'Notas de cada obra: lo resuelto y lo planificado', acciones: `<button type="button" class="btn-pdf" id="vi-pdf">${ic('pdf', 18)}PDF</button>` + botonCab('#visita/nueva', 'Nueva anotación', 'Nueva') });
+  $('#vista').innerHTML = `
+    <div class="filtros">
+      <div class="campo"><label for="v-f-obra">Obra</label><select id="v-f-obra">${opcionesObra(obras, fVis.obra, 'Todas las obras')}</select></div>
+      <div class="campo"><label for="v-f-txt">Buscar en las anotaciones</label><input id="v-f-txt" type="search" placeholder="Palabra o frase" value="${esc(fVis.texto)}"></div>
+      <div class="campo" style="flex:0 1 170px"><label for="v-f-desde">Desde</label><input id="v-f-desde" type="date" value="${fVis.desde}"></div>
+      <div class="campo" style="flex:0 1 170px"><label for="v-f-hasta">Hasta</label><input id="v-f-hasta" type="date" value="${fVis.hasta}"></div>
+    </div>
+    <div id="lista-vis"></div>`;
+  const etiquetaObra = v => v.obras ? `${v.obras.numero} · ${v.obras.nombre}` : '—';
+  const pintarLista = () => {
+    const txt = fVis.texto.toLowerCase();
+    const l = visitas.filter(v => (!fVis.obra || v.obra_id === fVis.obra) && (!fVis.desde || v.fecha >= fVis.desde) && (!fVis.hasta || v.fecha <= fVis.hasta) && (!txt || (v.notas || '').toLowerCase().includes(txt)));
+    const c = $('#lista-vis');
+    if (!visitas.length) { c.innerHTML = `<div class="tarjeta"><div class="vacio-caja"><p class="vacio">Aún no hay anotaciones.</p><a class="enlace-accion" href="#visita/nueva">Escribir la primera anotación</a></div></div>`; return; }
+    if (!l.length) { c.innerHTML = '<p class="vacio">Ninguna anotación coincide con los filtros.</p>'; return; }
+    c.innerHTML = `
+      <div class="lista-fichas solo-movil">${l.map(v => `<a class="ficha" href="#visita/${v.id}">
+        <div class="pila"><span class="sup num">${fFecha(v.fecha)}</span><h3>${esc(etiquetaObra(v))}</h3></div>
+        <p style="margin:0;color:var(--texto-2);white-space:pre-line">${esc(v.notas.length > 220 ? v.notas.slice(0, 220) + '…' : v.notas)}</p></a>`).join('')}</div>
+      <div class="tabla-caja solo-pc"><table><thead><tr><th>Fecha</th><th>Obra</th><th>Anotaciones</th></tr></thead><tbody>
+        ${l.map(v => `<tr data-ir="#visita/${v.id}"><td class="num" style="white-space:nowrap">${fFecha(v.fecha)}</td><td style="white-space:nowrap"><a href="#visita/${v.id}">${esc(etiquetaObra(v))}</a></td><td><div class="recorte" style="max-width:560px">${esc(v.notas)}</div></td></tr>`).join('')}
+      </tbody></table></div>
+      <p class="contador">${l.length} anotaci${l.length !== 1 ? 'ones' : 'ón'}</p>`;
+    $$('[data-ir]', c).forEach(r => r.onclick = e => { if (!e.target.closest('a')) location.hash = r.dataset.ir; });
+  };
+  $('#v-f-obra').onchange = e => { fVis.obra = e.target.value; pintarLista(); };
+  $('#v-f-txt').oninput = e => { fVis.texto = e.target.value; pintarLista(); };
+  $('#v-f-desde').onchange = e => { fVis.desde = e.target.value; pintarLista(); };
+  $('#v-f-hasta').onchange = e => { fVis.hasta = e.target.value; pintarLista(); };
+  $('#vi-pdf').onclick = e => {
+    if (!fVis.obra) { aviso('Elige primero la obra en el filtro «Obra».', true); $('#v-f-obra').focus(); return; }
+    if (fVis.desde && fVis.hasta && fVis.hasta < fVis.desde) { aviso('La fecha «Hasta» es anterior a «Desde».', true); return; }
+    botonPDF(e.currentTarget, () => pdfAnotaciones(fVis.obra, fVis.desde, fVis.hasta));
+  };
+  pintarLista();
+}
+
+async function formVisita(id, t) {
+  const nueva = id === 'nueva';
+  const [obras, visita] = await Promise.all([
+    q(sb.from('obras').select('id,numero,nombre,estado').order('numero')),
+    nueva ? null : q(sb.from('visitas').select('*').eq('id', id).single())
+  ]);
+  if (!vigente(t)) return;
+  cabecera({ titulo: nueva ? 'Nueva anotación' : 'Anotación', sub: nueva ? '' : fFecha(visita.fecha), volver: '#visitas' });
+  if (!obras.length) {
+    $('#vista').innerHTML = `<div class="tarjeta"><h2>Primero crea una obra</h2><p class="vacio">Cada anotación pertenece a una obra.</p><div><a class="btn btn-principal" href="#obra/nueva">Crear obra</a></div></div>`;
+    return;
+  }
+  const enCurso = obras.filter(o => o.estado === 'En curso');
+  const v = visita || { fecha: hoyISO(), obra_id: fVis.obra || (enCurso.length === 1 ? enCurso[0].id : ''), notas: '' };
+  const obrasSel = obras.filter(o => o.estado !== 'Terminada' || o.id === v.obra_id);
+  $('#vista').innerHTML = `<form class="form" id="f-vis" novalidate>
+    <div class="dos-col" style="grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)">
+      <div class="campo"><label for="vi-obra">Obra</label><select id="vi-obra">${opcionesObra(obrasSel, v.obra_id, 'Elegir obra…')}</select></div>
+      <div class="campo"><label for="vi-fecha">Fecha</label><input id="vi-fecha" type="date" value="${v.fecha}"></div>
+    </div>
+    <div class="campo"><label for="vi-notas">Anotación</label>
+      <textarea id="vi-notas" data-dictado rows="12" placeholder="Temas resueltos, decisiones tomadas y lo planificado para los próximos días">${esc(v.notas)}</textarea></div>
+    <p class="error-form" id="error-form" role="alert" hidden></p>
+    <div class="botonera">
+      <button class="btn btn-principal btn-bloque" type="submit" id="vi-guardar">Guardar anotación</button>
+      <a class="btn btn-secundario btn-bloque" href="#visitas">Cancelar</a>
+      ${nueva ? '' : '<button class="btn btn-peligro btn-bloque" type="button" id="vi-borrar">Borrar anotación</button>'}
+    </div>
+  </form>`;
+  $('#f-vis').onsubmit = e => {
+    e.preventDefault(); limpiarErrores();
+    const datos = { obra_id: val('vi-obra'), fecha: val('vi-fecha'), notas: val('vi-notas') };
+    if (!datos.obra_id) return marcarError('vi-obra', 'Elige la obra.');
+    if (!datos.fecha) return marcarError('vi-fecha', 'Falta la fecha.');
+    if (!datos.notas) return marcarError('vi-notas', 'Escribe la anotación.');
+    guardando($('#vi-guardar'), async () => {
+      if (nueva) await q(sb.from('visitas').insert(datos)); else await q(sb.from('visitas').update(datos).eq('id', id));
+      aviso('Anotación guardada'); irA('#visitas');
+    });
+  };
+  const b = $('#vi-borrar');
+  if (b) b.onclick = async () => {
+    if (!await confirmar(`¿Borrar la anotación del ${fFecha(visita.fecha)}? No se puede deshacer.`)) return;
+    try { await q(sb.from('visitas').delete().eq('id', id)); aviso('Anotación borrada'); irA('#visitas'); } catch (e) { aviso(mensajeError(e), true); }
+  };
+  if (nueva) $('#vi-notas').focus();
+}
+
+/* =================== MÁS (móvil) =================== */
+async function vistaMas(_, t) {
+  if (window.matchMedia('(min-width: 900px)').matches) { location.replace('#inicio'); return; }
+  cabecera({ titulo: 'Más' });
+  const cfg = leerConfig();
+  $('#vista').innerHTML = `
+    <ul class="menu-mas">
+      <li><a href="#visitas">${ic('visitas')}Anotaciones${ic('sig', 18)}</a></li>
+      <li><a href="#personal">${ic('personal')}Personal${ic('sig', 18)}</a></li>
+      <li><a href="#maquinaria">${ic('maquinaria')}Maquinaria${ic('sig', 18)}</a></li>
+    </ul>
+    <section class="tarjeta"><p class="etiqueta-seccion">Próximamente</p>
+      <div class="chips-prox"><span>Informes con IA</span><span>Seguimiento de incidencias</span><span>Fotografías</span><span>PDF</span></div>
+    </section>
+    <section class="tarjeta"><p class="etiqueta-seccion">Tu cuenta</p>
+      <p style="margin:0;word-break:break-all">${esc(usuario?.email || '')}</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px"><button class="btn btn-secundario" type="button" data-salir>Cerrar sesión</button>
+      ${cfg && !cfg.fija ? '<button class="btn btn-secundario" type="button" id="cambiar-con">Cambiar conexión</button>' : ''}</div>
+    </section>`;
+  $$('[data-salir]', $('#vista')).forEach(b => b.onclick = salir);
+  const cc = $('#cambiar-con'); if (cc) cc.onclick = async () => { try { localStorage.removeItem('cdo-conexion'); } catch (e) {} await sb.auth.signOut(); location.reload(); };
+}
+
+const VISTAS = { inicio: vistaInicio, obras: vistaObras, obra: formObra, partes: vistaPartes, parte: formParte, tareas: vistaTareas, tarea: formTarea, personal: vistaPersonal, persona: formPersona, maquinaria: vistaMaquinaria, maquina: formMaquina, visitas: vistaVisitas, visita: formVisita, mas: vistaMas };
+
+iniciar();
+</script>
+</body>
+</html>
